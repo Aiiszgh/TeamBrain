@@ -1,0 +1,15 @@
+{
+  "name": "teambrain",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": ["apps/api", "apps/web", "packages/shared"],
+  "scripts": {
+    "dev": "npm run build -w @teambrain/shared && concurrently -k -n api,web -c blue,green \"npm run dev -w @teambrain/api\" \"npm run dev -w @teambrain/web\"",
+    "build": "npm run build -w @teambrain/shared && npm run build -w @teambrain/api && npm run build -w @teambrain/web",
+    "test": "npm run test -w @teambrain/api",
+    "typecheck": "npm run build -w @teambrain/shared && npm run typecheck -w @teambrain/api && npm run typecheck -w @teambrain/web",
+    "reembed-memories": "npm run build -w @teambrain/shared && npm run build -w @teambrain/api && node apps/api/dist/reembed-memories.js",
+    "start": "npm run start -w @teambrain/api"
+  },
+  "devDependencies": { "concurrently": "^9.1.2", "typescript": "^5.7.3" }
+}
