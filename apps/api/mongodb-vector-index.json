@@ -1,0 +1,11 @@
+{
+  "fields": [
+    { "type": "vector", "path": "embedding", "numDimensions": 1536, "similarity": "cosine" },
+    { "type": "filter", "path": "teamId" },
+    { "type": "filter", "path": "status" },
+    { "type": "filter", "path": "scope" },
+    { "type": "filter", "path": "ownerId" },
+    { "type": "filter", "path": "projectId" },
+    { "type": "filter", "path": "expiresAt" }
+  ]
+}
