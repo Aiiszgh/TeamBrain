@@ -438,16 +438,13 @@ export const AuthPage: React.FC = () => {
           <div className="mt-12 flex items-center space-x-3 text-xs text-slate-400">
             <div className="flex -space-x-2 overflow-hidden">
               <span className="inline-block h-7 w-7 rounded-full ring-2 ring-[#0B0F19] bg-gradient-to-tr from-pink-500 to-rose-400 text-[10px] font-bold text-white flex items-center justify-center">
-                AK
+                KM
               </span>
               <span className="inline-block h-7 w-7 rounded-full ring-2 ring-[#0B0F19] bg-gradient-to-tr from-indigo-500 to-blue-400 text-[10px] font-bold text-white flex items-center justify-center">
-                SL
+                AN
               </span>
               <span className="inline-block h-7 w-7 rounded-full ring-2 ring-[#0B0F19] bg-gradient-to-tr from-emerald-500 to-teal-400 text-[10px] font-bold text-white flex items-center justify-center">
-                MR
-              </span>
-              <span className="inline-block h-7 w-7 rounded-full ring-2 ring-[#0B0F19] bg-gradient-to-tr from-amber-500 to-orange-400 text-[10px] font-bold text-white flex items-center justify-center">
-                DV
+                KT
               </span>
             </div>
             <span>Empowering engineering teams & AI agents across high-growth startups</span>
@@ -650,10 +647,10 @@ export const AuthPage: React.FC = () => {
             </div>
             <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center space-x-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center font-bold text-xs text-white">
-                EV
+                KM
               </div>
               <div>
-                <h5 className="text-sm font-bold text-white">Elena Vance</h5>
+                <h5 className="text-sm font-bold text-white">Keya Mehta</h5>
                 <p className="text-xs text-slate-400">Staff Platform Engineer @ HyperScale</p>
               </div>
             </div>
@@ -675,10 +672,10 @@ export const AuthPage: React.FC = () => {
             </div>
             <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center space-x-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-500 flex items-center justify-center font-bold text-xs text-white">
-                MT
+                AN
               </div>
               <div>
-                <h5 className="text-sm font-bold text-white">Marcus Thorne</h5>
+                <h5 className="text-sm font-bold text-white">Amogh Nandwana</h5>
                 <p className="text-xs text-slate-400">VP of Engineering @ VectorLabs</p>
               </div>
             </div>
@@ -699,10 +696,10 @@ export const AuthPage: React.FC = () => {
             </div>
             <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center space-x-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-500 flex items-center justify-center font-bold text-xs text-white">
-                SR
+                KT
               </div>
               <div>
-                <h5 className="text-sm font-bold text-white">Sophia Rodriguez</h5>
+                <h5 className="text-sm font-bold text-white">Krishna Tekwani</h5>
                 <p className="text-xs text-slate-400">Principal Architect @ CloudWave</p>
               </div>
             </div>
