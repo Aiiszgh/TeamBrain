@@ -21,6 +21,31 @@ import { config } from './config/env.js';
 //   });
 // }
 
+import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+export function createApp() {
+  const app = express();
+
+  // ... your existing middlewares and API routes (e.g., app.use('/api', ...)) ...
+
+  // Serve static assets from your frontend build folder
+  app.use(express.static(path.join(__dirname, '../frontend/dist'))); 
+
+  // Catch-all route to serve index.html for any frontend navigation
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
+  });
+
+  return app;
+}
+
+
+
 async function bootstrap() {
   await connectDatabase();
 
