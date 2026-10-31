@@ -38,7 +38,13 @@ router.get(
       const user = req.user!;
 
       if (scope === 'personal') {
-        const memories = await Memory.find({ ownerId: user._id, scope: 'personal' }).sort({
+        const memories = await Memory.find({
+          ownerId: user._id,
+          $or: [
+            { scope: 'personal' },
+            { status: { $in: ['pending', 'rejected', 'archived', 'superseded'] } },
+          ],
+        }).sort({
           createdAt: -1,
         });
         res.status(200).json(memories.map((m) => m.toJSON()));

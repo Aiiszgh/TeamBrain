@@ -264,6 +264,18 @@ Provide direct, helpful, and concise responses.`,
           citedSources.push(idStr);
         }
       }
+      if (conversation.projectId) {
+        const confirmedFusions = await Fusion.find({
+          projectId: conversation.projectId,
+          status: 'confirmed',
+        }).limit(5);
+        for (const f of confirmedFusions) {
+          const idStr = f._id.toString();
+          if (assistantReply.includes(idStr) || contextText.includes(idStr)) {
+            citedSources.push(idStr);
+          }
+        }
+      }
 
       // Persist user turn
       const userMessage = new Message({
