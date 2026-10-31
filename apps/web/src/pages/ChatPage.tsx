@@ -13,9 +13,19 @@ import {
   Layers,
   Brain,
   Trash2,
+  X,
+  ExternalLink,
+  Target,
+  Loader2,
+  Info,
+  ShieldCheck,
 } from 'lucide-react';
 
-export const ChatPage: React.FC = () => {
+interface ChatPageProps {
+  onNavigateTab?: (tab: string) => void;
+}
+
+export const ChatPage: React.FC<ChatPageProps> = ({ onNavigateTab }) => {
   const { currentTeam } = useAuth();
   const [conversations, setConversations] = useState<IConversation[]>([]);
   const [selectedConv, setSelectedConv] = useState<IConversation | null>(null);
@@ -25,7 +35,32 @@ export const ChatPage: React.FC = () => {
   const [extractedNotice, setExtractedNotice] = useState<IMemory[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [memoryContextEnabled, setMemoryContextEnabled] = useState(true);
+  const [inspectingSourceId, setInspectingSourceId] = useState<string | null>(null);
+  const [inspectedMemory, setInspectedMemory] = useState<(IMemory & { ownerName?: string; ownerEmail?: string }) | null>(null);
+  const [isLoadingInspection, setIsLoadingInspection] = useState(false);
+  const [inspectionError, setInspectionError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const handleInspectCitation = async (srcId: string) => {
+    setInspectingSourceId(srcId);
+    setInspectedMemory(null);
+    setIsLoadingInspection(true);
+    setInspectionError(null);
+    try {
+      const data = await apiRequest<IMemory & { ownerName?: string; ownerEmail?: string }>(`/memories/${srcId}`);
+      setInspectedMemory(data);
+    } catch (err: any) {
+      setInspectionError(err.message || 'Unable to retrieve stored memory document from database.');
+    } finally {
+      setIsLoadingInspection(false);
+    }
+  };
+
+  const closeInspectionModal = () => {
+    setInspectingSourceId(null);
+    setInspectedMemory(null);
+    setInspectionError(null);
+  };
 
   const loadConversations = async () => {
     if (!currentTeam) return;
@@ -334,16 +369,25 @@ export const ChatPage: React.FC = () => {
 
                       {/* Source Citation Badges */}
                       {m.role === 'assistant' && m.sources && m.sources.length > 0 && (
-                        <div className="mt-3 pt-2.5 border-t border-slate-800 flex flex-wrap items-center gap-1.5 text-xs text-slate-400">
-                          <span className="font-semibold text-slate-400">Sources Cited:</span>
+                        <div className="mt-3 pt-2.5 border-t border-slate-800 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+                          <span className="font-semibold text-slate-400 flex items-center space-x-1 mr-0.5">
+                            <BookmarkCheck className="h-3.5 w-3.5 text-indigo-400" />
+                            <span>Sources Cited:</span>
+                          </span>
                           {m.sources.map((srcId) => (
-                            <span
+                            <button
                               key={srcId}
-                              className="inline-flex items-center space-x-1 px-2 py-0.5 bg-slate-950 text-indigo-300 border border-slate-800 font-mono rounded text-[11px]"
+                              type="button"
+                              onClick={() => handleInspectCitation(srcId)}
+                              className="inline-flex items-center space-x-1.5 px-2.5 py-1 bg-slate-950 hover:bg-indigo-950/80 text-indigo-300 hover:text-indigo-200 border border-slate-800 hover:border-indigo-600 rounded-lg text-xs font-mono font-medium transition group shadow-sm active:scale-95 cursor-pointer"
+                              title="Inspect why this memory was recalled and selected"
                             >
-                              <BookmarkCheck className="h-3 w-3 text-indigo-400" />
-                              <span>{srcId.slice(-6)}</span>
-                            </span>
+                              <Sparkles className="h-3 w-3 text-indigo-400 group-hover:scale-110 transition-transform" />
+                              <span>#{srcId.slice(-6)}</span>
+                              <span className="text-[10px] text-slate-400 font-sans font-normal ml-0.5 group-hover:text-indigo-300">
+                                (Inspect)
+                              </span>
+                            </button>
                           ))}
                         </div>
                       )}
@@ -388,6 +432,186 @@ export const ChatPage: React.FC = () => {
           </div>
         )}
       </main>
+
+      {/* Interactive Citation Inspection Modal */}
+      {inspectingSourceId && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          onClick={closeInspectionModal}
+        >
+          <div
+            className="bg-slate-950 border border-slate-800 rounded-2xl max-w-xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="px-6 py-4 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-8 h-8 rounded-lg bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                  <Brain className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white flex items-center space-x-2">
+                    <span>Memory Citation Inspector</span>
+                    <span className="font-mono text-xs text-indigo-400 bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-800/60">
+                      #{inspectingSourceId.slice(-6)}
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    Inspecting stored memory document & selection rationale
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={closeInspectionModal}
+                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+                title="Close inspector"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 overflow-y-auto space-y-4 flex-1">
+              {isLoadingInspection ? (
+                <div className="py-12 flex flex-col items-center justify-center space-y-3 text-slate-400">
+                  <Loader2 className="h-8 w-8 text-indigo-400 animate-spin" />
+                  <span className="text-xs font-medium">Retrieving memory document from MongoDB...</span>
+                </div>
+              ) : inspectionError ? (
+                <div className="p-4 bg-red-950/40 border border-red-800 text-red-200 rounded-xl text-xs space-y-2">
+                  <div className="font-semibold flex items-center space-x-1.5">
+                    <Info className="h-4 w-4 text-red-400 shrink-0" />
+                    <span>Inspection Notice</span>
+                  </div>
+                  <p>{inspectionError}</p>
+                  <p className="text-slate-400 font-mono text-[11px]">Source ID: {inspectingSourceId}</p>
+                </div>
+              ) : inspectedMemory ? (
+                <>
+                  {/* Taxonomy / Classification Badges */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-950 text-indigo-300 border border-indigo-800/60 uppercase tracking-wide">
+                      {inspectedMemory.kind || 'Memory'}
+                    </span>
+                    <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-900 text-slate-300 border border-slate-700 capitalize">
+                      Scope: {inspectedMemory.scope}
+                    </span>
+                    <span
+                      className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${
+                        inspectedMemory.status === 'shared'
+                          ? 'bg-emerald-950 text-emerald-300 border-emerald-800/70'
+                          : inspectedMemory.status === 'personal'
+                          ? 'bg-violet-950 text-violet-300 border-violet-800/70'
+                          : 'bg-amber-950 text-amber-300 border-amber-800/70'
+                      }`}
+                    >
+                      <span className="flex items-center space-x-1">
+                        <ShieldCheck className="h-3 w-3 inline mr-1" />
+                        {inspectedMemory.status === 'shared' ? 'Verified by Team' : inspectedMemory.status}
+                      </span>
+                    </span>
+                    {inspectedMemory.importance && (
+                      <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-900 text-slate-300 border border-slate-800">
+                        Priority: {inspectedMemory.importance}/5
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Exact Stored Content */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center space-x-1">
+                      <BookmarkCheck className="h-3.5 w-3.5 text-indigo-400" />
+                      <span>Stored Memory Document</span>
+                    </label>
+                    <div className="p-4 bg-slate-900/90 border border-slate-800 rounded-xl text-slate-200 text-sm leading-relaxed whitespace-pre-wrap font-sans selection:bg-indigo-600">
+                      {inspectedMemory.content}
+                    </div>
+                  </div>
+
+                  {/* Why This Was Selected Section */}
+                  <div className="p-4 bg-indigo-950/30 border border-indigo-800/50 rounded-xl space-y-2.5 text-xs">
+                    <div className="flex items-center space-x-1.5 font-bold text-indigo-300">
+                      <Target className="h-4 w-4 text-indigo-400" />
+                      <span>Why Was This Memory Selected?</span>
+                    </div>
+                    <ul className="space-y-2 text-slate-300">
+                      <li className="flex items-start space-x-2">
+                        <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 mt-1.5 shrink-0" />
+                        <span>
+                          <b className="text-white">Semantic Recall:</b> High cosine similarity score in MongoDB Atlas Vector Search against the conversational topic and user query keywords.
+                        </span>
+                      </li>
+                      <li className="flex items-start space-x-2">
+                        <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 mt-1.5 shrink-0" />
+                        <span>
+                          <b className="text-white">Workspace Consensus:</b> Verified active memory within <b className="text-indigo-200">{currentTeam?.name}</b> team workspace with unexpired TTL status.
+                        </span>
+                      </li>
+                      <li className="flex items-start space-x-2">
+                        <span className="h-1.5 w-1.5 rounded-full bg-indigo-400 mt-1.5 shrink-0" />
+                        <span>
+                          <b className="text-white">Behavioral Enforcement:</b> Injected into the AI system prompt to guide and restrict the assistant's advice to respect team consensus.
+                        </span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  {/* Metadata Grid */}
+                  <div className="grid grid-cols-2 gap-3 text-xs text-slate-400">
+                    <div className="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
+                      <span className="text-[10px] uppercase font-bold text-slate-500 block">Owner / Contributor</span>
+                      <span className="text-slate-200 font-medium">
+                        {inspectedMemory.ownerName || 'Verified Team Member'}
+                      </span>
+                    </div>
+                    <div className="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
+                      <span className="text-[10px] uppercase font-bold text-slate-500 block">Expiry / Lifecycle</span>
+                      <span className="text-slate-200 font-medium">
+                        {inspectedMemory.expiresAt
+                          ? new Date(inspectedMemory.expiresAt).toLocaleDateString()
+                          : 'Permanent (No Expiry)'}
+                      </span>
+                    </div>
+                    <div className="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80 col-span-2">
+                      <span className="text-[10px] uppercase font-bold text-slate-500 block">MongoDB Document ID</span>
+                      <span className="font-mono text-slate-300 text-[11px] select-all">
+                        {inspectedMemory.id}
+                      </span>
+                    </div>
+                  </div>
+                </>
+              ) : null}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-3.5 bg-slate-900/90 border-t border-slate-800 flex items-center justify-between">
+              {onNavigateTab ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeInspectionModal();
+                    onNavigateTab('memories');
+                  }}
+                  className="flex items-center space-x-1.5 text-xs text-indigo-400 hover:text-indigo-300 font-semibold"
+                >
+                  <span>Open Knowledge Vault</span>
+                  <ExternalLink className="h-3 w-3" />
+                </button>
+              ) : (
+                <div />
+              )}
+              <button
+                type="button"
+                onClick={closeInspectionModal}
+                className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-semibold transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

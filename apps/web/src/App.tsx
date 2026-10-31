@@ -31,7 +31,7 @@ const AppContent: React.FC = () => {
     <div className="min-h-screen bg-[#0B0F19] text-slate-100 flex flex-col selection:bg-indigo-500 selection:text-white">
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
       <div className="flex-1 flex flex-col">
-        {activeTab === 'chat' && <ChatPage />}
+        {activeTab === 'chat' && <ChatPage onNavigateTab={setActiveTab} />}
         {activeTab === 'memories' && <MemoriesPage />}
         {activeTab === 'projects' && <ProjectsPage />}
         {activeTab === 'settings' && <SettingsPage />}

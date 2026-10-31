@@ -6,6 +6,7 @@ import {
   TeamMembership,
   ProjectMembership,
   Project,
+  Fusion,
 } from '../models/index.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth.js';
@@ -110,6 +111,54 @@ router.get(
       }
 
       throw new AppError('INVALID_SCOPE', 'Invalid memory scope requested', 400);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// GET /memories/:id (Retrieve specific memory or fusion for citation inspection)
+router.get(
+  '/memories/:id',
+  requireAuth,
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const id = req.params.id as string;
+      if (!id || !Types.ObjectId.isValid(id)) {
+        throw new AppError('INVALID_ID', 'Invalid memory ID format', 400);
+      }
+
+      const memory = await Memory.findById(id).populate('ownerId', 'name email');
+      if (memory) {
+        const json: any = memory.toJSON();
+        if (memory.ownerId && typeof memory.ownerId === 'object') {
+          json.ownerName = (memory.ownerId as any).name;
+          json.ownerEmail = (memory.ownerId as any).email;
+        }
+        res.status(200).json(json);
+        return;
+      }
+
+      // Check if ID refers to a fusion record
+      const fusion = await Fusion.findById(id).populate('createdById', 'name email');
+      if (fusion) {
+        const json: any = fusion.toJSON();
+        res.status(200).json({
+          id: json.id,
+          content: json.synthesis,
+          kind: 'fusion',
+          scope: json.projectId ? 'project' : 'team',
+          status: json.status,
+          ownerName: (fusion.createdById as any)?.name || 'AI Knowledge Fusion',
+          ownerEmail: (fusion.createdById as any)?.email,
+          createdAt: json.createdAt,
+          importance: 5,
+          confidence: 1,
+        });
+        return;
+      }
+
+      throw new AppError('MEMORY_NOT_FOUND', 'Memory record not found', 404);
     } catch (error) {
       next(error);
     }
