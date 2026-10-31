@@ -26,6 +26,16 @@ import {
   BookmarkCheck,
 } from 'lucide-react';
 
+const INDIAN_DEMO_USERS = [
+  { name: 'Aarav Sharma', email: 'aarav.sharma@teambrain.io' },
+  { name: 'Priya Patel', email: 'priya.patel@teambrain.io' },
+  { name: 'Rohan Verma', email: 'rohan.verma@teambrain.io' },
+  { name: 'Ananya Iyer', email: 'ananya.iyer@teambrain.io' },
+  { name: 'Kabir Mehta', email: 'kabir.mehta@teambrain.io' },
+  { name: 'Diya Deshmukh', email: 'diya.deshmukh@teambrain.io' },
+  { name: 'Arjun Nair', email: 'arjun.nair@teambrain.io' },
+];
+
 export const AuthPage: React.FC = () => {
   const { login, register } = useAuth();
 
@@ -73,14 +83,15 @@ export const AuthPage: React.FC = () => {
 
   const handleDemoFill = (type: 'member' | 'lead') => {
     setError('');
+    const randomUser = INDIAN_DEMO_USERS[Math.floor(Math.random() * INDIAN_DEMO_USERS.length)]!;
     if (type === 'lead') {
       setAuthMode('login');
-      setEmail('alex@teambrain.io');
+      setEmail(randomUser.email);
       setPassword('Password123!');
     } else {
       setAuthMode('register');
-      setName('Sarah Chen');
-      setEmail('sarah.chen@teambrain.io');
+      setName(randomUser.name);
+      setEmail(randomUser.email);
       setPassword('Password123!');
       setTeamName('Core Architecture');
       setInviteCode('');
@@ -485,8 +496,8 @@ export const AuthPage: React.FC = () => {
           <div className="space-y-6 max-w-3xl mx-auto">
             {/* User turn */}
             <div className="flex items-start space-x-3 justify-end">
-              <div className="bg-indigo-600 text-white rounded-2xl rounded-tr-sm px-5 py-3.5 text-sm shadow-md max-w-md">
-                “How should we handle webhook retries and authentication for the new billing provider?”
+              <div className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-2xl rounded-tr-sm px-5 py-3.5 text-sm shadow-md max-w-md">
+                “Which connecting language and library should we use to link our Node.js backend to the database for this project?”
               </div>
               <div className="w-8 h-8 rounded-full bg-slate-800 text-slate-200 flex items-center justify-center text-xs font-bold shrink-0">
                 You
@@ -504,21 +515,21 @@ export const AuthPage: React.FC = () => {
                     <BookmarkCheck className="h-3 w-3 text-indigo-400" />
                     <span>Memory Verified by Team</span>
                   </span>
-                  <span className="text-slate-500 text-xs">Decision #742</span>
+                  <span className="text-slate-500 text-xs">Decision #204</span>
                 </div>
 
                 <p className="leading-relaxed">
-                  Per the team’s consensus in Architecture Review:
+                  Per the verified team consensus for Database Architecture:
                 </p>
 
                 <ul className="mt-2.5 space-y-1.5 text-slate-300 list-disc list-inside text-xs leading-relaxed">
-                  <li>Webhook endpoints must enforce <b>HMAC SHA-256</b> header signature validation.</li>
-                  <li>Inbound transactions use <b>UUIDv7</b> idempotency keys stored with a 24-hour retention window.</li>
-                  <li>Failed invocations trigger exponential backoff with jitter (max 5 retries).</li>
+                  <li>Our primary database is <b>MongoDB</b>, and our backend must connect using <b>Mongoose ODM</b> (v8+) or the official <b>MongoDB Node Driver</b> with strictly typed TypeScript interfaces.</li>
+                  <li>Connect via <code className="bg-slate-900 px-1.5 py-0.5 rounded text-indigo-300 font-mono text-[11px]">mongoose.connect(config.mongoUri)</code> with <code className="bg-slate-900 px-1.5 py-0.5 rounded text-indigo-300 font-mono text-[11px]">bufferCommands: false</code> to prevent query buffering timeouts during disconnection.</li>
+                  <li>All models must define compound indexes and TTL expiration indexes natively in Mongoose schemas.</li>
                 </ul>
 
                 <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
-                  <span className="italic">Origin: Architecture Working Group (Approved by Sarah Chen)</span>
+                  <span className="italic">Origin: Database Architecture Standard (Approved by Amogh Nandwana)</span>
                   <span className="text-indigo-400 font-medium">100% Consistent</span>
                 </div>
               </div>

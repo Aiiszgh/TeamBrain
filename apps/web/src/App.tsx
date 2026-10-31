@@ -14,10 +14,10 @@ const AppContent: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center bg-[#0B0F19] text-white">
         <div className="flex flex-col items-center space-y-3">
-          <Brain className="h-10 w-10 text-indigo-600 animate-pulse" />
-          <span className="text-sm font-semibold text-slate-500">Loading TeamBrain...</span>
+          <Brain className="h-10 w-10 text-indigo-400 animate-pulse" />
+          <span className="text-sm font-semibold text-slate-400">Loading TeamBrain...</span>
         </div>
       </div>
     );
@@ -28,9 +28,9 @@ const AppContent: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-[#0B0F19] text-slate-100 flex flex-col selection:bg-indigo-500 selection:text-white">
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
-      <div className="flex-1">
+      <div className="flex-1 flex flex-col">
         {activeTab === 'chat' && <ChatPage />}
         {activeTab === 'memories' && <MemoriesPage />}
         {activeTab === 'projects' && <ProjectsPage />}

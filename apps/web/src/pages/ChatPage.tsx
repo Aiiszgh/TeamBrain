@@ -142,14 +142,14 @@ export const ChatPage: React.FC = () => {
   }
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] bg-slate-50 overflow-hidden">
+    <div className="flex h-[calc(100vh-4rem)] bg-[#0B0F19] overflow-hidden text-slate-200">
       {/* Sidebar: Conversations List */}
-      <aside className="w-72 bg-white border-r border-slate-200 flex flex-col">
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+      <aside className="w-72 bg-slate-950 border-r border-slate-800/80 flex flex-col">
+        <div className="p-4 border-b border-slate-800/80 flex items-center justify-between">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Conversations</span>
           <button
             onClick={handleCreateConversation}
-            className="flex items-center space-x-1 px-2.5 py-1 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg text-xs font-semibold transition"
+            className="flex items-center space-x-1 px-2.5 py-1 bg-indigo-950/80 text-indigo-300 hover:bg-indigo-900 border border-indigo-700/50 rounded-lg text-xs font-semibold transition"
           >
             <Plus className="h-3.5 w-3.5" />
             <span>New</span>
@@ -158,7 +158,7 @@ export const ChatPage: React.FC = () => {
 
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
           {conversations.length === 0 ? (
-            <div className="p-4 text-xs text-slate-400 text-center">
+            <div className="p-4 text-xs text-slate-500 text-center">
               No conversations yet. Start one!
             </div>
           ) : (
@@ -166,13 +166,13 @@ export const ChatPage: React.FC = () => {
               <button
                 key={c.id}
                 onClick={() => setSelectedConv(c)}
-                className={`w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center space-x-2 transition ${
+                className={`w-full text-left px-3 py-2.5 rounded-lg text-xs flex items-center space-x-2 transition ${
                   selectedConv?.id === c.id
-                    ? 'bg-indigo-50 text-indigo-900 font-semibold shadow-sm'
-                    : 'text-slate-700 hover:bg-slate-100'
+                    ? 'bg-indigo-950/80 border border-indigo-700/60 text-white font-semibold shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
                 }`}
               >
-                <MessageSquare className="h-4 w-4 shrink-0 text-slate-400" />
+                <MessageSquare className="h-3.5 w-3.5 shrink-0 text-indigo-400" />
                 <span className="truncate">{c.title || 'Untitled Conversation'}</span>
               </button>
             ))
@@ -181,20 +181,20 @@ export const ChatPage: React.FC = () => {
       </aside>
 
       {/* Main Chat Interface */}
-      <main className="flex-1 flex flex-col h-full bg-slate-50">
+      <main className="flex-1 flex flex-col h-full bg-[#0B0F19]">
         {selectedConv ? (
           <>
             {/* Header info */}
-            <div className="px-6 py-3 bg-white border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+            <div className="px-6 py-3 bg-slate-950/90 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="text-base font-bold text-slate-800">{selectedConv.title || 'New Conversation'}</h2>
-                <p className="text-xs text-slate-500">
-                  Private persistent assistant context in team <b>{currentTeam.name}</b>
+                <h2 className="text-base font-bold text-white">{selectedConv.title || 'New Conversation'}</h2>
+                <p className="text-xs text-slate-400">
+                  Private persistent assistant context in team <b className="text-indigo-300">{currentTeam.name}</b>
                 </p>
               </div>
 
               {/* Memory Context Comparison Toggle */}
-              <div className="flex items-center space-x-1 bg-slate-100 p-1 rounded-xl">
+              <div className="flex items-center space-x-1 bg-slate-900 border border-slate-800 p-1 rounded-xl">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-2">
                   Context:
                 </span>
@@ -204,7 +204,7 @@ export const ChatPage: React.FC = () => {
                   className={`flex items-center space-x-1 px-3 py-1 rounded-lg text-xs font-semibold transition ${
                     memoryContextEnabled
                       ? 'bg-indigo-600 text-white shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900'
+                      : 'text-slate-400 hover:text-white'
                   }`}
                   title="Include verified team and personal memories in assistant context"
                 >
@@ -217,7 +217,7 @@ export const ChatPage: React.FC = () => {
                   className={`flex items-center space-x-1 px-3 py-1 rounded-lg text-xs font-semibold transition ${
                     !memoryContextEnabled
                       ? 'bg-amber-600 text-white shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900'
+                      : 'text-slate-400 hover:text-white'
                   }`}
                   title="Answer without any team or personal memories (General Baseline mode)"
                 >
@@ -229,18 +229,18 @@ export const ChatPage: React.FC = () => {
 
             {/* Notification of extracted durable memories */}
             {extractedNotice.length > 0 && (
-              <div className="mx-6 mt-4 p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start space-x-3 text-sm text-emerald-900">
-                <Sparkles className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+              <div className="mx-6 mt-4 p-3.5 bg-emerald-950/40 border border-emerald-700/50 rounded-xl flex items-start space-x-3 text-sm text-emerald-200">
+                <Sparkles className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
                 <div>
-                  <div className="font-semibold text-emerald-800">
+                  <div className="font-semibold text-emerald-300">
                     Durable Knowledge Automatically Extracted & Stored!
                   </div>
-                  <p className="text-xs text-emerald-700 mt-0.5">
+                  <p className="text-xs text-emerald-400/90 mt-0.5">
                     The assistant detected durable personal knowledge and generated vector embeddings for future retrieval:
                   </p>
                   <ul className="mt-2 space-y-1 text-xs">
                     {extractedNotice.map((m) => (
-                      <li key={m.id} className="bg-white/80 p-1.5 rounded border border-emerald-200">
+                      <li key={m.id} className="bg-slate-950/70 p-1.5 rounded border border-emerald-800/60">
                         • <b>{m.kind}</b>: {m.content}
                       </li>
                     ))}
@@ -250,7 +250,7 @@ export const ChatPage: React.FC = () => {
             )}
 
             {errorMessage && (
-              <div className="mx-6 mt-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl">
+              <div className="mx-6 mt-4 p-3 bg-red-950/50 border border-red-800 text-red-200 text-sm rounded-xl">
                 {errorMessage}
               </div>
             )}
@@ -258,10 +258,10 @@ export const ChatPage: React.FC = () => {
             {/* Messages Scroll Area */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               {messages.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center text-slate-400">
-                  <Bot className="h-12 w-12 text-slate-300 mb-2" />
-                  <p className="text-sm font-medium text-slate-600">Start the conversation</p>
-                  <p className="text-xs max-w-sm mt-1">
+                <div className="h-full flex flex-col items-center justify-center text-center text-slate-500">
+                  <Bot className="h-12 w-12 text-slate-700 mb-2" />
+                  <p className="text-sm font-medium text-slate-300">Start the conversation</p>
+                  <p className="text-xs max-w-sm mt-1 text-slate-500">
                     Ask questions, document decisions, or discuss project tasks. Durable facts are automatically remembered in your personal knowledge vault.
                   </p>
                 </div>
@@ -274,7 +274,7 @@ export const ChatPage: React.FC = () => {
                     }`}
                   >
                     {m.role === 'assistant' && (
-                      <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-violet-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-indigo-500/20">
                         <Bot className="h-4 w-4" />
                       </div>
                     )}
@@ -282,20 +282,20 @@ export const ChatPage: React.FC = () => {
                     <div
                       className={`max-w-xl rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm ${
                         m.role === 'user'
-                          ? 'bg-indigo-600 text-white'
-                          : 'bg-white border border-slate-200 text-slate-800'
+                          ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white'
+                          : 'bg-slate-900/90 border border-slate-800 text-slate-200'
                       }`}
                     >
                       {/* Memory Context Mode Badge for Assistant */}
                       {m.role === 'assistant' && (
                         <div className="flex items-center space-x-2 mb-2">
                           {m.memoryEnabled === false ? (
-                            <span className="inline-flex items-center space-x-1 px-2 py-0.5 bg-amber-50 text-amber-700 text-[10px] font-semibold rounded-full border border-amber-200">
+                            <span className="inline-flex items-center space-x-1 px-2 py-0.5 bg-amber-950/60 text-amber-300 text-[10px] font-semibold rounded-full border border-amber-800/60">
                               <Sparkles className="h-2.5 w-2.5" />
                               <span>Baseline Mode (Memory OFF)</span>
                             </span>
                           ) : (
-                            <span className="inline-flex items-center space-x-1 px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[10px] font-semibold rounded-full border border-indigo-200">
+                            <span className="inline-flex items-center space-x-1 px-2 py-0.5 bg-indigo-950/60 text-indigo-300 text-[10px] font-semibold rounded-full border border-indigo-700/60">
                               <Brain className="h-2.5 w-2.5" />
                               <span>Memory Infused (Context Active)</span>
                             </span>
@@ -307,14 +307,14 @@ export const ChatPage: React.FC = () => {
 
                       {/* Source Citation Badges */}
                       {m.role === 'assistant' && m.sources && m.sources.length > 0 && (
-                        <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
+                        <div className="mt-3 pt-2.5 border-t border-slate-800 flex flex-wrap items-center gap-1.5 text-xs text-slate-400">
                           <span className="font-semibold text-slate-400">Sources Cited:</span>
                           {m.sources.map((srcId) => (
                             <span
                               key={srcId}
-                              className="inline-flex items-center space-x-1 px-2 py-0.5 bg-slate-100 text-slate-700 font-mono rounded text-[11px]"
+                              className="inline-flex items-center space-x-1 px-2 py-0.5 bg-slate-950 text-indigo-300 border border-slate-800 font-mono rounded text-[11px]"
                             >
-                              <BookmarkCheck className="h-3 w-3 text-indigo-500" />
+                              <BookmarkCheck className="h-3 w-3 text-indigo-400" />
                               <span>{srcId.slice(-6)}</span>
                             </span>
                           ))}
@@ -323,7 +323,7 @@ export const ChatPage: React.FC = () => {
                     </div>
 
                     {m.role === 'user' && (
-                      <div className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-slate-800 text-slate-200 flex items-center justify-center shrink-0 font-bold text-xs">
                         <UserIcon className="h-4 w-4" />
                       </div>
                     )}
@@ -334,7 +334,7 @@ export const ChatPage: React.FC = () => {
             </div>
 
             {/* Input Bar */}
-            <div className="p-4 bg-white border-t border-slate-200">
+            <div className="p-4 bg-slate-950 border-t border-slate-800">
               <form onSubmit={handleSendMessage} className="flex items-center space-x-2">
                 <input
                   type="text"
@@ -342,12 +342,12 @@ export const ChatPage: React.FC = () => {
                   onChange={(e) => setInputContent(e.target.value)}
                   placeholder="Ask TeamBrain, share project context, or record instructions..."
                   disabled={isSending}
-                  className="flex-1 px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                  className="flex-1 px-4 py-2.5 bg-slate-900 border border-slate-700/80 rounded-xl text-sm text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none disabled:opacity-50"
                 />
                 <button
                   type="submit"
                   disabled={isSending || !inputContent.trim()}
-                  className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold flex items-center space-x-1.5 transition disabled:opacity-50"
+                  className="px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white rounded-xl text-sm font-semibold flex items-center space-x-1.5 transition disabled:opacity-50 shadow-md shadow-indigo-500/20"
                 >
                   <Send className="h-4 w-4" />
                   <span>Send</span>
@@ -356,7 +356,7 @@ export const ChatPage: React.FC = () => {
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
+          <div className="flex-1 flex items-center justify-center text-slate-500 text-sm">
             Select a conversation on the left or create a new one to begin.
           </div>
         )}
