@@ -14,6 +14,7 @@ import {
   extractMemoriesFromTurn,
   generateEmbedding,
   isOpenAIConfigured,
+  getActiveChatModel,
 } from '../services/openai.js';
 import { config } from '../config/env.js';
 import { logMemoryEvent } from '../services/memoryService.js';
@@ -246,7 +247,7 @@ router.post(
 
       try {
         const completion = await client.chat.completions.create({
-          model: config.openaiChatModel,
+          model: getActiveChatModel(),
           messages: chatMessages,
           temperature: 0.7,
         });

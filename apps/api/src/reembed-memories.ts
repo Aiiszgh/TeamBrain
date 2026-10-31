@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import { config } from './config/env.js';
 import { Memory } from './models/index.js';
-import { generateEmbedding, isOpenAIConfigured } from './services/openai.js';
+import { generateEmbedding, isOpenAIConfigured, getActiveEmbeddingModel, getActiveAIProvider } from './services/openai.js';
 
 async function main() {
   console.log('--- TeamBrain Memory Re-embedding Tool ---');
@@ -9,11 +9,12 @@ async function main() {
   await mongoose.connect(config.mongodbUri);
 
   if (!isOpenAIConfigured()) {
-    console.error('ERROR: OPENAI_API_KEY is not configured. Cannot generate embeddings.');
+    console.error('ERROR: AI API key is not configured. Cannot generate embeddings.');
     process.exit(1);
   }
 
-  console.log(`Using embedding model: ${config.openaiEmbeddingModel}`);
+  console.log(`Active AI Provider: ${getActiveAIProvider()}`);
+  console.log(`Using embedding model: ${getActiveEmbeddingModel()}`);
 
   // Fetch all personal and shared memories
   const memories = await Memory.find({

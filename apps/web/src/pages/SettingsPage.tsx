@@ -2,7 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { apiRequest } from '../api/client';
 import { ITeamMember, TeamRole } from '@teambrain/shared';
-import { Users, KeyRound, Copy, Check, UserPlus, Trash2, ShieldAlert } from 'lucide-react';
+import {
+  Users,
+  KeyRound,
+  Copy,
+  Check,
+  UserPlus,
+  Trash2,
+  ShieldAlert,
+  Bot,
+  Sparkles,
+  Cpu,
+  ExternalLink,
+  ShieldCheck,
+  AlertCircle,
+} from 'lucide-react';
 
 export const SettingsPage: React.FC = () => {
   const { currentTeam, currentRole, user } = useAuth();
@@ -10,6 +24,22 @@ export const SettingsPage: React.FC = () => {
   const [members, setMembers] = useState<ITeamMember[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // AI Provider config
+  const [aiConfig, setAiConfig] = useState<{
+    provider: string;
+    isConfigured: boolean;
+    chatModel: string;
+    embeddingModel: string;
+    maskedKey: string;
+    geminiConfigured: boolean;
+    openaiConfigured: boolean;
+  } | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState<'gemini' | 'openai'>('gemini');
+  const [inputApiKey, setInputApiKey] = useState('');
+  const [isSavingAiKey, setIsSavingAiKey] = useState(false);
+  const [aiSuccessMessage, setAiSuccessMessage] = useState('');
+  const [aiErrorMessage, setAiErrorMessage] = useState('');
 
   // Add member form
   const [addEmail, setAddEmail] = useState('');
@@ -40,9 +70,48 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
+  const loadAiConfig = async () => {
+    try {
+      const data = await apiRequest<any>('/ai/config');
+      setAiConfig(data);
+      if (data.provider) setSelectedProvider(data.provider);
+    } catch (err: any) {
+      console.warn('Could not load AI config:', err);
+    }
+  };
+
   useEffect(() => {
     loadMembers();
+    loadAiConfig();
   }, [currentTeam]);
+
+  const handleSaveAiConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isDemoUser) {
+      setAiErrorMessage('Action disabled in Demo Mode: Demo accounts operate with read-only permissions.');
+      return;
+    }
+    if (!inputApiKey.trim()) return;
+    setIsSavingAiKey(true);
+    setAiErrorMessage('');
+    setAiSuccessMessage('');
+    try {
+      const res = await apiRequest<any>('/ai/config', {
+        method: 'POST',
+        body: JSON.stringify({
+          provider: selectedProvider,
+          apiKey: inputApiKey.trim(),
+        }),
+      });
+      setAiSuccessMessage(res.message);
+      setInputApiKey('');
+      loadAiConfig();
+    } catch (err: any) {
+      setAiErrorMessage(err.message || 'Failed to authenticate and verify API key.');
+    } finally {
+      setIsSavingAiKey(false);
+    }
+  };
 
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -168,6 +237,142 @@ export const SettingsPage: React.FC = () => {
           {errorMessage}
         </div>
       )}
+
+      {/* AI Intelligence & Model Provider Configuration */}
+      <div className="bg-slate-900/90 rounded-2xl border border-slate-800 p-6 shadow-xl space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center space-x-2 text-indigo-400 font-bold text-base">
+            <Cpu className="h-5 w-5" />
+            <span className="text-white">AI Intelligence & Provider Configuration</span>
+          </div>
+
+          {/* Active status badge */}
+          {aiConfig?.isConfigured ? (
+            <div className="flex items-center space-x-1.5 px-3 py-1 bg-emerald-950/70 border border-emerald-700/60 rounded-full text-xs font-semibold text-emerald-300">
+              <ShieldCheck className="h-4 w-4 text-emerald-400" />
+              <span>
+                {aiConfig.provider === 'gemini' ? 'Google Gemini Active' : 'OpenAI Active'} &bull; {aiConfig.chatModel}
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center space-x-1.5 px-3 py-1 bg-amber-950/70 border border-amber-700/60 rounded-full text-xs font-semibold text-amber-300">
+              <AlertCircle className="h-4 w-4 text-amber-400" />
+              <span>API Key Required for Live AI Execution</span>
+            </div>
+          )}
+        </div>
+
+        <p className="text-xs text-slate-400 leading-relaxed">
+          TeamBrain uses <b>Google Gemini</b> (or OpenAI) to generate conversational responses, automatically extract durable memories from chat turns, and synthesize team decisions.
+          Embeddings are created with <span className="font-mono text-indigo-300">text-embedding-004</span> (768-dim) for high-precision MongoDB vector search.
+        </p>
+
+        {aiSuccessMessage && (
+          <div className="p-3.5 bg-emerald-950/50 border border-emerald-700 text-emerald-200 rounded-xl text-xs flex items-center space-x-2">
+            <Check className="h-4 w-4 text-emerald-400 shrink-0" />
+            <span>{aiSuccessMessage}</span>
+          </div>
+        )}
+
+        {aiErrorMessage && (
+          <div className="p-3.5 bg-red-950/50 border border-red-700 text-red-200 rounded-xl text-xs flex items-center space-x-2">
+            <AlertCircle className="h-4 w-4 text-red-400 shrink-0" />
+            <span>{aiErrorMessage}</span>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+          <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block">AI Provider</span>
+            <div className="text-sm font-semibold text-white flex items-center space-x-1.5">
+              <Sparkles className="h-4 w-4 text-indigo-400" />
+              <span>{aiConfig?.provider === 'gemini' ? 'Google Gemini' : 'OpenAI'}</span>
+            </div>
+            <p className="text-[11px] text-slate-400">
+              Compatible with Gemini 1.5 Flash, 2.0 Flash, and text-embedding-004.
+            </p>
+          </div>
+
+          <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block">Chat & Synthesis Model</span>
+            <div className="text-sm font-semibold font-mono text-indigo-300">
+              {aiConfig?.chatModel || 'gemini-1.5-flash'}
+            </div>
+            <p className="text-[11px] text-slate-400">
+              Powers conversational Q&A, context injection, and conflict synthesis.
+            </p>
+          </div>
+
+          <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 block">Current API Key</span>
+            <div className="text-sm font-semibold font-mono text-slate-300 truncate">
+              {aiConfig?.maskedKey || (aiConfig?.isConfigured ? 'Configured in Environment' : 'None Configured')}
+            </div>
+            <p className="text-[11px] text-slate-400">
+              Can be set in <code className="text-indigo-300">.env</code> or updated below.
+            </p>
+          </div>
+        </div>
+
+        {/* Form to update / set API Key */}
+        <form onSubmit={handleSaveAiConfig} className="pt-2 space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
+                Select Provider
+              </label>
+              <select
+                value={selectedProvider}
+                onChange={(e) => setSelectedProvider(e.target.value as 'gemini' | 'openai')}
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white focus:outline-none"
+              >
+                <option value="gemini">Google Gemini (Recommended)</option>
+                <option value="openai">OpenAI</option>
+              </select>
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-slate-300 uppercase mb-1 flex items-center justify-between">
+                <span>{selectedProvider === 'gemini' ? 'Gemini API Key' : 'OpenAI API Key'}</span>
+                {selectedProvider === 'gemini' && (
+                  <a
+                    href="https://aistudio.google.com/app/apikey"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[11px] text-indigo-400 hover:text-indigo-300 font-normal flex items-center space-x-1"
+                  >
+                    <span>Get free Gemini key</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                )}
+              </label>
+              <input
+                type="password"
+                value={inputApiKey}
+                onChange={(e) => setInputApiKey(e.target.value)}
+                placeholder={selectedProvider === 'gemini' ? 'AIzaSy...' : 'sk-...'}
+                disabled={isSavingAiKey || isDemoUser}
+                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono disabled:opacity-50"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSavingAiKey || !inputApiKey.trim() || isDemoUser}
+              className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white rounded-xl text-sm font-semibold transition disabled:opacity-50 shadow-md shadow-indigo-500/20 flex items-center justify-center space-x-1.5"
+            >
+              {isSavingAiKey ? (
+                <span>Validating & Connecting...</span>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  <span>Connect Key</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
 
       {/* Invitation Code Generator Box */}
       {isModerator && (
