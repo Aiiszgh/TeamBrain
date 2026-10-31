@@ -37,7 +37,16 @@ const memoryEventSchema = new Schema<IMemoryEventDocument>(
       transform(_doc, ret: any) {
         ret.id = ret._id.toString();
         ret.memoryId = ret.memoryId?.toString();
-        ret.actorId = ret.actorId?.toString();
+        if (ret.actorId && typeof ret.actorId === 'object' && ret.actorId.name) {
+          ret.actor = {
+            id: ret.actorId._id?.toString(),
+            name: ret.actorId.name,
+            email: ret.actorId.email,
+          };
+          ret.actorId = ret.actorId._id?.toString();
+        } else {
+          ret.actorId = ret.actorId?.toString();
+        }
         delete ret._id;
         delete ret.__v;
         return ret;

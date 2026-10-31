@@ -13,6 +13,7 @@ import tasksRoutes from './routes/tasks.js';
 import conversationsRoutes from './routes/conversations.js';
 import memoriesRoutes from './routes/memories.js';
 import fusionsRoutes from './routes/fusions.js';
+import aiRoutes from './routes/ai.js';
 
 export function createApp(): Express {
   const app = express();
@@ -39,6 +40,7 @@ export function createApp(): Express {
   app.use('/api', conversationsRoutes);
   app.use('/api', memoriesRoutes);
   app.use('/api', fusionsRoutes);
+  app.use('/api', aiRoutes);
 
   // Global Error Handler
   app.use(errorHandler);

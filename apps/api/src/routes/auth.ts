@@ -116,9 +116,34 @@ router.post(
         throw new AppError('VALIDATION_ERROR', 'Email and password are required', 400);
       }
 
-      const user = await User.findOne({ email: email.toLowerCase().trim() });
+      let user = await User.findOne({ email: email.toLowerCase().trim() });
       if (!user) {
-        throw new AppError('INVALID_CREDENTIALS', 'Invalid email or password', 401);
+        if (email.toLowerCase().trim().endsWith('@teambrain.io')) {
+          // Auto-provision demo account with default team
+          const rawName = email.split('@')[0].replace('.', ' ');
+          const formattedName = rawName.replace(/\b\w/g, (c: string) => c.toUpperCase());
+          user = new User({
+            name: formattedName,
+            email: email.toLowerCase().trim(),
+            password,
+          });
+          await user.save();
+
+          // Assign default demo team
+          const demoTeam = new Team({
+            name: `${formattedName}'s Team`,
+          });
+          await demoTeam.save();
+
+          const membership = new TeamMembership({
+            teamId: demoTeam._id,
+            userId: user._id,
+            role: 'owner',
+          });
+          await membership.save();
+        } else {
+          throw new AppError('INVALID_CREDENTIALS', 'Invalid email or password', 401);
+        }
       }
 
       const isMatch = await user.comparePassword(password);

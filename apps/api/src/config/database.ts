@@ -4,24 +4,36 @@ import { config } from './env.js';
 // Disable command buffering so queries fail immediately with clear feedback when disconnected
 mongoose.set('bufferCommands', false);
 
-let isConnected = false;
+let retryTimer: NodeJS.Timeout | null = null;
 
 export async function connectDatabase(): Promise<void> {
-  if (isConnected || mongoose.connection.readyState === 1) {
+  if (mongoose.connection.readyState === 1) {
     return;
   }
 
   try {
     await mongoose.connect(config.mongodbUri, {
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 3000,
     });
-    isConnected = true;
     console.log('MongoDB connected successfully');
+    if (retryTimer) {
+      clearInterval(retryTimer);
+      retryTimer = null;
+    }
   } catch (error: any) {
-    isConnected = false;
     console.warn(
-      `MongoDB connection notice: Unable to connect to ${config.mongodbUri}. Please configure MONGODB_URI in .env with your MongoDB Atlas connection string.`
+      `MongoDB connection notice: Unable to connect to ${config.mongodbUri}. Retrying in 5 seconds...`
     );
+    if (!retryTimer) {
+      retryTimer = setInterval(() => {
+        if (mongoose.connection.readyState !== 1) {
+          connectDatabase().catch(() => {});
+        } else if (retryTimer) {
+          clearInterval(retryTimer);
+          retryTimer = null;
+        }
+      }, 5000);
+    }
   }
 }
 
@@ -30,8 +42,11 @@ export function isDatabaseConnected(): boolean {
 }
 
 export async function disconnectDatabase(): Promise<void> {
+  if (retryTimer) {
+    clearInterval(retryTimer);
+    retryTimer = null;
+  }
   if (mongoose.connection.readyState !== 0) {
     await mongoose.disconnect();
-    isConnected = false;
   }
 }

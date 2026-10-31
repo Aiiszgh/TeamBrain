@@ -14,10 +14,12 @@ import {
   BookmarkCheck,
   Check,
   Trash2,
+  Lock,
 } from 'lucide-react';
 
 export const ProjectsPage: React.FC = () => {
-  const { currentTeam, currentRole } = useAuth();
+  const { user, currentTeam, currentRole } = useAuth();
+  const isDemoUser = Boolean(user?.email?.endsWith('@teambrain.io'));
   const [projects, setProjects] = useState<IProject[]>([]);
   const [selectedProject, setSelectedProject] = useState<IProject | null>(null);
   const [subTab, setSubTab] = useState<'tasks' | 'fusions' | 'members'>('tasks');
@@ -205,17 +207,48 @@ export const ProjectsPage: React.FC = () => {
     }
   };
 
+  if (isDemoUser) {
+    return (
+      <div className="flex-1 bg-[#0B0F19] text-white flex items-center justify-center p-6 min-h-[calc(100vh-4rem)]">
+        <div className="max-w-md w-full bg-slate-900/90 border border-slate-800 rounded-3xl p-8 text-center shadow-2xl backdrop-blur-xl">
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-amber-500/10">
+            <Lock className="h-8 w-8" />
+          </div>
+          <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold mb-3">
+            <span>Demo Guest Restriction</span>
+          </div>
+          <h2 className="text-2xl font-extrabold text-white mb-2">Projects Workspace Locked</h2>
+          <p className="text-xs sm:text-sm text-slate-400 leading-relaxed mb-6">
+            You are signed in as a demo user (<b>{user?.name}</b>). Opening projects, managing tasks, and running AI knowledge fusions are restricted to registered member accounts.
+          </p>
+          <div className="p-4 bg-slate-950/80 border border-slate-800/80 rounded-2xl text-xs text-slate-400 mb-6 text-left space-y-2">
+            <div className="font-bold text-slate-300 mb-1 flex items-center space-x-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
+              <span>Available in Demo Mode:</span>
+            </div>
+            <div>• Explore the AI Assistant with Memory ON/OFF comparison toggle</div>
+            <div>• Inspect Team Memories, Vector Search, and Review Queue</div>
+            <div>• View institutional knowledge and citation sources</div>
+          </div>
+          <div className="text-[11px] text-slate-500">
+            Create a standard account from the cover page to unlock full project management.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!currentTeam) {
-    return <div className="p-8 text-center text-slate-500">Please select a team.</div>;
+    return <div className="p-8 text-center text-slate-400">Please select a team.</div>;
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-slate-200">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Projects & Tasks</h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <h1 className="text-2xl font-bold text-white">Projects & Tasks</h1>
+          <p className="text-xs sm:text-sm text-slate-400 mt-1">
             Scoped workspaces with linked tasks, AI knowledge fusion, and conflict resolution.
           </p>
         </div>
@@ -223,7 +256,7 @@ export const ProjectsPage: React.FC = () => {
         {isTeamAdmin && (
           <button
             onClick={() => setShowProjectModal(true)}
-            className="inline-flex items-center space-x-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-xl shadow-sm transition"
+            className="inline-flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-medium text-xs sm:text-sm rounded-xl shadow-md shadow-indigo-500/20 transition"
           >
             <Plus className="h-4 w-4" />
             <span>New Project</span>
@@ -232,7 +265,7 @@ export const ProjectsPage: React.FC = () => {
       </div>
 
       {errorMessage && (
-        <div className="my-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm">
+        <div className="my-6 p-4 bg-red-950/50 border border-red-800 text-red-200 rounded-xl text-xs sm:text-sm">
           {errorMessage}
         </div>
       )}
@@ -245,7 +278,7 @@ export const ProjectsPage: React.FC = () => {
             Projects ({projects.length})
           </span>
           {projects.length === 0 ? (
-            <div className="p-4 bg-white border border-slate-200 rounded-xl text-xs text-slate-400 text-center">
+            <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-xl text-xs text-slate-500 text-center">
               No projects yet.
             </div>
           ) : (
@@ -255,12 +288,12 @@ export const ProjectsPage: React.FC = () => {
                 onClick={() => setSelectedProject(p)}
                 className={`w-full text-left p-3.5 rounded-xl border transition ${
                   selectedProject?.id === p.id
-                    ? 'bg-indigo-50/70 border-indigo-300 text-indigo-950 font-semibold shadow-sm'
-                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                    ? 'bg-indigo-950/80 border-indigo-600/70 text-white font-semibold shadow-md'
+                    : 'bg-slate-900/50 border-slate-800/80 text-slate-300 hover:bg-slate-900'
                 }`}
               >
                 <div className="flex items-center space-x-2">
-                  <FolderGit2 className="h-4 w-4 text-indigo-600 shrink-0" />
+                  <FolderGit2 className="h-4 w-4 text-indigo-400 shrink-0" />
                   <span className="truncate">{p.name}</span>
                 </div>
                 {p.description && (
@@ -274,22 +307,22 @@ export const ProjectsPage: React.FC = () => {
         {/* Selected Project Main View */}
         <div className="lg:col-span-3">
           {selectedProject ? (
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-slate-900/80 rounded-2xl border border-slate-800 shadow-xl overflow-hidden backdrop-blur-xl">
               {/* Project Title Bar */}
-              <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="p-6 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900">{selectedProject.name}</h2>
+                  <h2 className="text-xl font-bold text-white">{selectedProject.name}</h2>
                   {selectedProject.description && (
-                    <p className="text-sm text-slate-500 mt-1">{selectedProject.description}</p>
+                    <p className="text-xs sm:text-sm text-slate-400 mt-1">{selectedProject.description}</p>
                   )}
                 </div>
 
                 {/* Sub-tab navigation */}
-                <div className="flex bg-slate-100 p-1 rounded-xl">
+                <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800">
                   <button
                     onClick={() => setSubTab('tasks')}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                      subTab === 'tasks' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'
+                      subTab === 'tasks' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
                     }`}
                   >
                     Tasks ({tasks.length})
@@ -297,7 +330,7 @@ export const ProjectsPage: React.FC = () => {
                   <button
                     onClick={() => setSubTab('fusions')}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                      subTab === 'fusions' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'
+                      subTab === 'fusions' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
                     }`}
                   >
                     AI Fusions ({fusions.length})
@@ -305,7 +338,7 @@ export const ProjectsPage: React.FC = () => {
                   <button
                     onClick={() => setSubTab('members')}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                      subTab === 'members' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'
+                      subTab === 'members' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
                     }`}
                   >
                     Members ({members.length})
@@ -317,10 +350,10 @@ export const ProjectsPage: React.FC = () => {
               {subTab === 'tasks' && (
                 <div className="p-6 space-y-6">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-semibold text-slate-700">Project Action Items</span>
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Project Action Items</span>
                     <button
                       onClick={() => setShowTaskModal(true)}
-                      className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-lg flex items-center space-x-1"
+                      className="px-3 py-1.5 bg-indigo-950/80 border border-indigo-700/60 hover:bg-indigo-900 text-indigo-300 text-xs font-semibold rounded-lg flex items-center space-x-1"
                     >
                       <Plus className="h-3.5 w-3.5" />
                       <span>Add Task</span>
@@ -329,12 +362,12 @@ export const ProjectsPage: React.FC = () => {
 
                   <div className="space-y-3">
                     {tasks.length === 0 ? (
-                      <div className="py-8 text-center text-xs text-slate-400">No tasks created yet.</div>
+                      <div className="py-8 text-center text-xs text-slate-500">No tasks created yet.</div>
                     ) : (
                       tasks.map((t) => (
                         <div
                           key={t.id}
-                          className="p-4 rounded-xl border border-slate-200 flex items-start justify-between gap-4 hover:border-slate-300 transition"
+                          className="p-4 rounded-xl border border-slate-800 bg-slate-950/60 flex items-start justify-between gap-4 hover:border-slate-700 transition"
                         >
                           <div className="space-y-1">
                             <div className="flex items-center space-x-2">
@@ -345,24 +378,24 @@ export const ProjectsPage: React.FC = () => {
                                     t.status === 'done' ? 'todo' : 'done'
                                   )
                                 }
-                                className="text-slate-400 hover:text-indigo-600"
+                                className="text-slate-500 hover:text-indigo-400"
                               >
                                 {t.status === 'done' ? (
-                                  <CheckCircle className="h-5 w-5 text-emerald-600" />
+                                  <CheckCircle className="h-5 w-5 text-emerald-400" />
                                 ) : (
                                   <Circle className="h-5 w-5" />
                                 )}
                               </button>
                               <span
                                 className={`text-sm font-medium ${
-                                  t.status === 'done' ? 'line-through text-slate-400' : 'text-slate-800'
+                                  t.status === 'done' ? 'line-through text-slate-500' : 'text-slate-200'
                                 }`}
                               >
                                 {t.title}
                               </span>
                             </div>
                             {t.description && (
-                              <p className="text-xs text-slate-500 pl-7">{t.description}</p>
+                              <p className="text-xs text-slate-400 pl-7">{t.description}</p>
                             )}
                           </div>
 
@@ -370,7 +403,7 @@ export const ProjectsPage: React.FC = () => {
                             <select
                               value={t.status}
                               onChange={(e) => handleUpdateTaskStatus(t.id, e.target.value as TaskStatus)}
-                              className="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-slate-50 font-medium"
+                              className="text-xs border border-slate-700 rounded-lg px-2 py-1 bg-slate-900 text-slate-200 font-medium focus:outline-none"
                             >
                               <option value="todo">To Do</option>
                               <option value="in_progress">In Progress</option>
@@ -378,7 +411,7 @@ export const ProjectsPage: React.FC = () => {
                             </select>
                             <button
                               onClick={() => handleDeleteTask(t.id)}
-                              className="text-slate-400 hover:text-red-600 p-1"
+                              className="text-slate-500 hover:text-red-400 p-1"
                               title="Delete task"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -395,12 +428,12 @@ export const ProjectsPage: React.FC = () => {
               {subTab === 'fusions' && (
                 <div className="p-6 space-y-6">
                   {/* Trigger Fusion Box */}
-                  <div className="p-5 bg-indigo-50/50 border border-indigo-100 rounded-2xl">
-                    <div className="flex items-center space-x-2 text-indigo-900 font-bold text-sm mb-1">
-                      <Sparkles className="h-4 w-4 text-indigo-600" />
+                  <div className="p-5 bg-indigo-950/40 border border-indigo-800/50 rounded-2xl">
+                    <div className="flex items-center space-x-2 text-indigo-300 font-bold text-sm mb-1">
+                      <Sparkles className="h-4 w-4 text-indigo-400" />
                       <span>Synthesize Project Knowledge & Identify Conflicts</span>
                     </div>
-                    <p className="text-xs text-indigo-700/80 mb-4">
+                    <p className="text-xs text-slate-400 mb-4">
                       Runs an OpenAI synthesis across all approved team and project memories. Detects opposing rules and creates a verifiable draft record.
                     </p>
                     <form onSubmit={handleTriggerFusion} className="flex gap-2">
@@ -409,12 +442,12 @@ export const ProjectsPage: React.FC = () => {
                         value={fusionTopic}
                         onChange={(e) => setFusionTopic(e.target.value)}
                         placeholder="Focus topic (optional, e.g. 'Authentication architecture' or 'Release deadlines')..."
-                        className="flex-1 px-3 py-2 border border-slate-300 rounded-xl text-sm"
+                        className="flex-1 px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                       />
                       <button
                         type="submit"
                         disabled={isFusing}
-                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold flex items-center space-x-1.5 disabled:opacity-50"
+                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold flex items-center space-x-1.5 disabled:opacity-50 transition"
                       >
                         <Sparkles className="h-3.5 w-3.5" />
                         <span>{isFusing ? 'Synthesizing...' : 'Generate Fusion'}</span>

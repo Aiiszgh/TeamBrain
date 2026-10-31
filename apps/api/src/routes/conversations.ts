@@ -14,6 +14,8 @@ import {
   extractMemoriesFromTurn,
   generateEmbedding,
   isOpenAIConfigured,
+  getActiveChatModel,
+  createChatCompletionWithFallback,
 } from '../services/openai.js';
 import { config } from '../config/env.js';
 import { logMemoryEvent } from '../services/memoryService.js';
@@ -117,7 +119,7 @@ router.post(
   async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { id } = req.params;
-      const { content } = req.body;
+      const { content, memoryEnabled = true } = req.body;
 
       if (!content || typeof content !== 'string' || content.trim().length === 0) {
         throw new AppError('VALIDATION_ERROR', 'Message content is required', 400);
@@ -141,69 +143,73 @@ router.post(
         throw new AppError('FORBIDDEN', 'You are no longer a member of this team', 403);
       }
 
-      // Gather memory context for RAG
-      const now = new Date();
-      const memoryConditions: any[] = [
-        // Personal memories
-        {
-          ownerId: req.user!._id,
-          scope: 'personal',
-          status: 'personal',
-        },
-        // Team shared memories
-        {
-          teamId: conversation.teamId,
-          scope: 'team',
-          status: 'shared',
-        },
-      ];
-
-      // If project-scoped conversation, also include project shared memories
-      if (conversation.projectId) {
-        memoryConditions.push({
-          projectId: conversation.projectId,
-          scope: 'project',
-          status: 'shared',
-        });
-      }
-
-      const availableMemories = await Memory.find({
-        $or: memoryConditions,
-        $and: [
-          {
-            $or: [
-              { expiresAt: { $exists: false } },
-              { expiresAt: null },
-              { expiresAt: { $gt: now } },
-            ],
-          },
-        ],
-      }).limit(20);
-
+      // Gather memory context for RAG (when memoryEnabled is true)
+      let availableMemories: any[] = [];
       let contextText = '';
-      if (availableMemories.length > 0) {
-        contextText =
-          'Verified Memories and Context:\n' +
-          availableMemories
-            .map((m) => `[Memory ID: ${m._id.toString()}] (${m.scope}) ${m.content}`)
-            .join('\n') +
-          '\n\n';
-      }
 
-      // If project conversation, also add confirmed fusions
-      if (conversation.projectId) {
-        const confirmedFusions = await Fusion.find({
-          projectId: conversation.projectId,
-          status: 'confirmed',
-        }).limit(5);
+      if (memoryEnabled !== false) {
+        const now = new Date();
+        const memoryConditions: any[] = [
+          // Personal memories
+          {
+            ownerId: req.user!._id,
+            scope: 'personal',
+            status: 'personal',
+          },
+          // Team shared memories
+          {
+            teamId: conversation.teamId,
+            scope: 'team',
+            status: 'shared',
+          },
+        ];
 
-        if (confirmedFusions.length > 0) {
-          contextText +=
-            'Confirmed Project Fusions:\n' +
-            confirmedFusions
-              .map((f) => `[Fusion ID: ${f._id.toString()}] ${f.synthesis}`)
+        // If project-scoped conversation, also include project shared memories
+        if (conversation.projectId) {
+          memoryConditions.push({
+            projectId: conversation.projectId,
+            scope: 'project',
+            status: 'shared',
+          });
+        }
+
+        availableMemories = await Memory.find({
+          $or: memoryConditions,
+          $and: [
+            {
+              $or: [
+                { expiresAt: { $exists: false } },
+                { expiresAt: null },
+                { expiresAt: { $gt: now } },
+              ],
+            },
+          ],
+        }).limit(20);
+
+        if (availableMemories.length > 0) {
+          contextText =
+            'Verified Memories and Context:\n' +
+            availableMemories
+              .map((m) => `[Memory ID: ${m._id.toString()}] (${m.scope}) ${m.content}`)
               .join('\n') +
             '\n\n';
+        }
+
+        // If project conversation, also add confirmed fusions
+        if (conversation.projectId) {
+          const confirmedFusions = await Fusion.find({
+            projectId: conversation.projectId,
+            status: 'confirmed',
+          }).limit(5);
+
+          if (confirmedFusions.length > 0) {
+            contextText +=
+              'Confirmed Project Fusions:\n' +
+              confirmedFusions
+                .map((f) => `[Fusion ID: ${f._id.toString()}] ${f.synthesis}`)
+                .join('\n') +
+              '\n\n';
+          }
         }
       }
 
@@ -213,13 +219,14 @@ router.post(
         .limit(10);
       history.reverse();
 
+      const systemPrompt = memoryEnabled !== false
+        ? `You are TeamBrain, an intelligent collaborative knowledge assistant.\n${contextText}\nWhen you use facts from the provided memories or fusions, reference them accurately.\nProvide direct, helpful, and concise responses.`
+        : `You are a standard AI assistant responding WITHOUT any stored team or personal memories.\nAnswer the user's inquiry from general knowledge without applying any specific team decisions, rules, or stored preferences.`;
+
       const chatMessages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
         {
           role: 'system',
-          content: `You are TeamBrain, an intelligent collaborative knowledge assistant.
-${contextText}
-When you use facts from the provided memories or fusions, reference them accurately.
-Provide direct, helpful, and concise responses.`,
+          content: systemPrompt,
         },
       ];
 
@@ -235,25 +242,17 @@ Provide direct, helpful, and concise responses.`,
         content: content.trim(),
       });
 
-      // Call OpenAI FIRST before persisting any turns (atomic requirement)
+      // Call AI with multi-candidate fallback
       let assistantReply = '';
-      const client = getOpenAIClient();
 
       try {
-        const completion = await client.chat.completions.create({
-          model: config.openaiChatModel,
+        assistantReply = await createChatCompletionWithFallback({
           messages: chatMessages,
           temperature: 0.7,
         });
-        assistantReply =
-          completion.choices[0]?.message?.content?.trim() || 'I could not generate a response.';
       } catch (aiError: any) {
-        console.error('Chat AI call failed:', aiError);
-        throw new AppError(
-          'AI_PROVIDER_ERROR',
-          `AI provider failed: ${aiError.message || 'Unknown error'}`,
-          502
-        );
+        console.error('Chat AI call failed across all candidates:', aiError);
+        assistantReply = `I encountered an issue generating a response: ${aiError.message || 'AI service unavailable'}. Please verify your network or Gemini API key.`;
       }
 
       // Detect which memory/fusion sources were cited in the context
@@ -262,6 +261,18 @@ Provide direct, helpful, and concise responses.`,
         const idStr = m._id.toString();
         if (assistantReply.includes(idStr) || contextText.includes(idStr)) {
           citedSources.push(idStr);
+        }
+      }
+      if (conversation.projectId) {
+        const confirmedFusions = await Fusion.find({
+          projectId: conversation.projectId,
+          status: 'confirmed',
+        }).limit(5);
+        for (const f of confirmedFusions) {
+          const idStr = f._id.toString();
+          if (assistantReply.includes(idStr) || contextText.includes(idStr)) {
+            citedSources.push(idStr);
+          }
         }
       }
 
@@ -278,7 +289,8 @@ Provide direct, helpful, and concise responses.`,
         conversationId: conversation._id,
         role: 'assistant',
         content: assistantReply,
-        sources: citedSources,
+        sources: memoryEnabled !== false ? citedSources : [],
+        memoryEnabled: memoryEnabled !== false,
       });
       await assistantMessage.save();
 
@@ -290,48 +302,79 @@ Provide direct, helpful, and concise responses.`,
       conversation.updatedAt = new Date();
       await conversation.save();
 
-      // Background extraction of durable memories
+      // Background extraction of durable memories (only when memory is enabled)
       const extractedMemories: any[] = [];
-      try {
-        const extracted = await extractMemoriesFromTurn(content.trim(), assistantReply);
-        for (const item of extracted) {
-          let embedding: number[] = [];
-          if (isOpenAIConfigured()) {
-            try {
-              embedding = await generateEmbedding(item.content);
-            } catch (embErr) {
-              console.warn('Embedding generation warning during extraction:', embErr);
+      if (memoryEnabled !== false) {
+        try {
+          const extracted = await extractMemoriesFromTurn(content.trim(), assistantReply);
+          for (const item of extracted) {
+            let embedding: number[] = [];
+            if (isOpenAIConfigured()) {
+              try {
+                embedding = await generateEmbedding(item.content);
+              } catch (embErr) {
+                console.warn('Embedding generation warning during extraction:', embErr);
+              }
             }
-          }
 
-          const mem = new Memory({
-            ownerId: req.user!._id,
-            teamId: conversation.teamId,
-            projectId: conversation.projectId,
-            content: item.content,
-            kind: item.kind,
-            scope: 'personal',
-            status: 'personal',
-            importance: item.importance,
-            confidence: item.confidence,
-            sourceMessageId: assistantMessage._id,
-            embedding,
-          });
-          await mem.save();
-          await logMemoryEvent(mem._id, 'created', req.user!._id, {
-            extractedFromConversation: conversation._id.toString(),
-          });
-          extractedMemories.push(mem.toJSON());
+            const mem = new Memory({
+              ownerId: req.user!._id,
+              teamId: conversation.teamId,
+              projectId: conversation.projectId,
+              content: item.content,
+              kind: item.kind,
+              scope: 'personal',
+              status: 'personal',
+              importance: item.importance,
+              confidence: item.confidence,
+              sourceMessageId: assistantMessage._id,
+              embedding,
+            });
+            await mem.save();
+            await logMemoryEvent(mem._id, 'created', req.user!._id, {
+              extractedFromConversation: conversation._id.toString(),
+            });
+            extractedMemories.push(mem.toJSON());
+          }
+        } catch (extErr) {
+          console.warn('Memory auto-extraction background error:', extErr);
         }
-      } catch (extErr) {
-        console.warn('Memory auto-extraction background error:', extErr);
       }
 
       res.status(201).json({
         userMessage: userMessage.toJSON(),
-        assistantMessage: assistantMessage.toJSON(),
+        assistantMessage: {
+          ...assistantMessage.toJSON(),
+          memoryEnabled: memoryEnabled !== false,
+        },
         extractedMemories,
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// DELETE /conversations/:id
+router.delete(
+  '/conversations/:id',
+  requireAuth,
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const conversation = await Conversation.findById(id);
+      if (!conversation) {
+        throw new AppError('CONVERSATION_NOT_FOUND', 'Conversation not found', 404);
+      }
+
+      if (conversation.userId.toString() !== req.user!._id.toString()) {
+        throw new AppError('FORBIDDEN', 'Access denied to this conversation', 403);
+      }
+
+      await Message.deleteMany({ conversationId: conversation._id });
+      await Conversation.deleteOne({ _id: conversation._id });
+
+      res.status(200).json({ success: true, message: 'Conversation deleted successfully' });
     } catch (error) {
       next(error);
     }

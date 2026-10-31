@@ -5,6 +5,7 @@ export interface IMessageDocument extends Document {
   role: 'user' | 'assistant';
   content: string;
   sources: string[];
+  memoryEnabled?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -20,6 +21,7 @@ const messageSchema = new Schema<IMessageDocument>(
     role: { type: String, enum: ['user', 'assistant'], required: true },
     content: { type: String, required: true },
     sources: [{ type: String }],
+    memoryEnabled: { type: Boolean, default: true },
   },
   {
     timestamps: true,
