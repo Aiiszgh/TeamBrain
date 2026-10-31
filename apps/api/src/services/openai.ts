@@ -17,12 +17,12 @@ export function getActiveAIProvider(): 'gemini' | 'openai' {
 
 export function getActiveChatModel(): string {
   const provider = getActiveAIProvider();
-  return provider === 'gemini' ? config.geminiChatModel : config.openaiChatModel;
+  return provider === 'gemini' ? (config.geminiChatModel || 'gemini-3.5-flash-lite') : (config.openaiChatModel || 'gpt-4o-mini');
 }
 
 export function getActiveEmbeddingModel(): string {
   const provider = getActiveAIProvider();
-  return provider === 'gemini' ? config.geminiEmbeddingModel : config.openaiEmbeddingModel;
+  return provider === 'gemini' ? (config.geminiEmbeddingModel || 'gemini-embedding-001') : (config.openaiEmbeddingModel || 'text-embedding-3-small');
 }
 
 export function getAIClient(): OpenAI {
@@ -90,20 +90,82 @@ export function setRuntimeAIKey(provider: 'gemini' | 'openai', apiKey: string, c
   }
 }
 
+export async function createChatCompletionWithFallback(options: {
+  messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>;
+  temperature?: number;
+  response_format?: { type: 'json_object' };
+}): Promise<string> {
+  const client = getAIClient();
+  const provider = getActiveAIProvider();
+
+  // Try configured model first, then known robust Gemini models if provider is Gemini
+  const candidates =
+    provider === 'gemini'
+      ? [
+          config.geminiChatModel || 'gemini-3.5-flash-lite',
+          'gemini-3.5-flash-lite',
+          'gemma-4-26b-a4b-it',
+          'gemma-4-31b-it',
+          'gemini-flash-latest',
+        ]
+      : [config.openaiChatModel || 'gpt-4o-mini', 'gpt-4o'];
+
+  // Deduplicate
+  const uniqueCandidates = Array.from(new Set(candidates.filter(Boolean)));
+  let lastError: any = null;
+
+  for (const model of uniqueCandidates) {
+    try {
+      const response = await client.chat.completions.create({
+        model,
+        messages: options.messages,
+        temperature: options.temperature ?? 0.7,
+        ...(options.response_format ? { response_format: options.response_format } : {}),
+      });
+
+      const reply = response.choices[0]?.message?.content?.trim();
+      if (reply) {
+        return reply;
+      }
+    } catch (err: any) {
+      lastError = err;
+      console.warn(`Model candidate '${model}' failed (${err.message}). Trying next candidate...`);
+    }
+  }
+
+  throw lastError || new Error('All AI model candidates failed to respond.');
+}
+
 export async function generateEmbedding(text: string): Promise<number[]> {
   const client = getAIClient();
-  const model = getActiveEmbeddingModel();
-  try {
-    const response = await client.embeddings.create({
-      model,
-      input: text.replace(/\n+/g, ' '),
-    });
-    return response.data[0]?.embedding ?? [];
-  } catch (error: any) {
-    if (error instanceof AppError) throw error;
-    console.error(`${getActiveAIProvider().toUpperCase()} embedding generation failed:`, error);
-    throw new AppError('EMBEDDING_FAILED', `Failed to generate vector embedding: ${error.message}`, 502);
+  const provider = getActiveAIProvider();
+
+  const candidateModels =
+    provider === 'gemini'
+      ? [config.geminiEmbeddingModel || 'gemini-embedding-001', 'gemini-embedding-001', 'text-embedding-004']
+      : [config.openaiEmbeddingModel || 'text-embedding-3-small'];
+
+  const uniqueCandidates = Array.from(new Set(candidateModels.filter(Boolean)));
+  let lastError: any = null;
+
+  for (const model of uniqueCandidates) {
+    try {
+      const response = await client.embeddings.create({
+        model,
+        input: text.replace(/\n+/g, ' '),
+      });
+      const emb = response.data[0]?.embedding;
+      if (emb && emb.length > 0) {
+        return emb;
+      }
+    } catch (error: any) {
+      lastError = error;
+      console.warn(`Embedding candidate '${model}' failed (${error.message}). Trying next candidate...`);
+    }
   }
+
+  console.error(`${provider.toUpperCase()} embedding generation failed across all candidates:`, lastError);
+  throw new AppError('EMBEDDING_FAILED', `Failed to generate vector embedding: ${lastError?.message || 'Unknown error'}`, 502);
 }
 
 function parseJSONFromCompletion(raw: string): any {
@@ -142,7 +204,6 @@ export async function extractMemoriesFromTurn(
     return [];
   }
 
-  const client = getAIClient();
   const prompt = `You are a memory extraction assistant. Analyze this conversation turn between a User and an Assistant.
 Identify any durable, important information worth remembering for the future (such as user preferences, technical decisions, established rules, project facts, or instructions).
 Only extract durable knowledge, not transient pleasantries or temporary questions.
@@ -159,14 +220,12 @@ Respond ONLY with a valid JSON array of objects. Each object must have:
 If nothing durable is present, respond with an empty JSON array: []`;
 
   try {
-    const response = await client.chat.completions.create({
-      model: getActiveChatModel(),
+    const raw = await createChatCompletionWithFallback({
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.1,
       response_format: { type: 'json_object' },
     });
 
-    const raw = response.choices[0]?.message?.content?.trim() || '{}';
     const parsed = parseJSONFromCompletion(raw);
     const list = Array.isArray(parsed) ? parsed : (parsed.memories || parsed.items || []);
     return list.filter((item: any) => item && typeof item.content === 'string' && item.content.length > 0);
@@ -190,8 +249,6 @@ export async function synthesizeMemories(
   memories: Array<{ id: string; content: string; kind?: string }>,
   topic?: string
 ): Promise<FusionResult> {
-  const client = getAIClient();
-
   const memoryListing = memories
     .map((m) => `[ID: ${m.id}] (${m.kind || 'general'}) ${m.content}`)
     .join('\n');
@@ -220,14 +277,12 @@ Respond with a JSON object strictly following this structure:
 }`;
 
   try {
-    const response = await client.chat.completions.create({
-      model: getActiveChatModel(),
+    const raw = await createChatCompletionWithFallback({
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.2,
       response_format: { type: 'json_object' },
     });
 
-    const raw = response.choices[0]?.message?.content || '{}';
     const parsed = parseJSONFromCompletion(raw);
     return {
       synthesis: parsed.synthesis || 'No synthesis generated.',

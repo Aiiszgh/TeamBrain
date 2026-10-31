@@ -15,6 +15,7 @@ import {
   generateEmbedding,
   isOpenAIConfigured,
   getActiveChatModel,
+  createChatCompletionWithFallback,
 } from '../services/openai.js';
 import { config } from '../config/env.js';
 import { logMemoryEvent } from '../services/memoryService.js';
@@ -241,25 +242,17 @@ router.post(
         content: content.trim(),
       });
 
-      // Call OpenAI FIRST before persisting any turns (atomic requirement)
+      // Call AI with multi-candidate fallback
       let assistantReply = '';
-      const client = getOpenAIClient();
 
       try {
-        const completion = await client.chat.completions.create({
-          model: getActiveChatModel(),
+        assistantReply = await createChatCompletionWithFallback({
           messages: chatMessages,
           temperature: 0.7,
         });
-        assistantReply =
-          completion.choices[0]?.message?.content?.trim() || 'I could not generate a response.';
       } catch (aiError: any) {
-        console.error('Chat AI call failed:', aiError);
-        throw new AppError(
-          'AI_PROVIDER_ERROR',
-          `AI provider failed: ${aiError.message || 'Unknown error'}`,
-          502
-        );
+        console.error('Chat AI call failed across all candidates:', aiError);
+        assistantReply = `I encountered an issue generating a response: ${aiError.message || 'AI service unavailable'}. Please verify your network or Gemini API key.`;
       }
 
       // Detect which memory/fusion sources were cited in the context
