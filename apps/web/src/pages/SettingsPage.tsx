@@ -263,8 +263,7 @@ export const SettingsPage: React.FC = () => {
         </div>
 
         <p className="text-xs text-slate-400 leading-relaxed">
-          TeamBrain uses <b>Google Gemini</b> (or OpenAI) to generate conversational responses, automatically extract durable memories from chat turns, and synthesize team decisions.
-          Embeddings are created with <span className="font-mono text-indigo-300">text-embedding-004</span> (768-dim) for high-precision MongoDB vector search.
+          TeamBrain is powered centrally by <b>Google Gemini 1.5 Flash</b> on the server. When deployed to Vercel, your master server environment key (<span className="font-mono text-indigo-300">GEMINI_API_KEY</span>) powers conversational intelligence, memory extraction, and MongoDB vector search for all team members. <b>End-users never need to provide or manage their own API keys.</b>
         </p>
 
         {aiSuccessMessage && (
@@ -314,64 +313,71 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Form to update / set API Key */}
-        <form onSubmit={handleSaveAiConfig} className="pt-2 space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
-                Select Provider
-              </label>
-              <select
-                value={selectedProvider}
-                onChange={(e) => setSelectedProvider(e.target.value as 'gemini' | 'openai')}
-                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white focus:outline-none"
+        {/* Form to update / set Master API Key (Only visible to Team Owner or when unconfigured) */}
+        {isOwner ? (
+          <form onSubmit={handleSaveAiConfig} className="pt-2 space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
+                  Select Provider
+                </label>
+                <select
+                  value={selectedProvider}
+                  onChange={(e) => setSelectedProvider(e.target.value as 'gemini' | 'openai')}
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white focus:outline-none"
+                >
+                  <option value="gemini">Google Gemini (Recommended)</option>
+                  <option value="openai">OpenAI</option>
+                </select>
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-semibold text-slate-300 uppercase mb-1 flex items-center justify-between">
+                  <span>{selectedProvider === 'gemini' ? 'Master Gemini API Key' : 'Master OpenAI API Key'}</span>
+                  {selectedProvider === 'gemini' && (
+                    <a
+                      href="https://aistudio.google.com/app/apikey"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[11px] text-indigo-400 hover:text-indigo-300 font-normal flex items-center space-x-1"
+                    >
+                      <span>Get free Gemini key</span>
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  )}
+                </label>
+                <input
+                  type="password"
+                  value={inputApiKey}
+                  onChange={(e) => setInputApiKey(e.target.value)}
+                  placeholder={selectedProvider === 'gemini' ? 'AIzaSy...' : 'sk-...'}
+                  disabled={isSavingAiKey || isDemoUser}
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono disabled:opacity-50"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSavingAiKey || !inputApiKey.trim() || isDemoUser}
+                className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white rounded-xl text-sm font-semibold transition disabled:opacity-50 shadow-md shadow-indigo-500/20 flex items-center justify-center space-x-1.5"
               >
-                <option value="gemini">Google Gemini (Recommended)</option>
-                <option value="openai">OpenAI</option>
-              </select>
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-semibold text-slate-300 uppercase mb-1 flex items-center justify-between">
-                <span>{selectedProvider === 'gemini' ? 'Gemini API Key' : 'OpenAI API Key'}</span>
-                {selectedProvider === 'gemini' && (
-                  <a
-                    href="https://aistudio.google.com/app/apikey"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[11px] text-indigo-400 hover:text-indigo-300 font-normal flex items-center space-x-1"
-                  >
-                    <span>Get free Gemini key</span>
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
+                {isSavingAiKey ? (
+                  <span>Validating & Connecting...</span>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    <span>Connect Key</span>
+                  </>
                 )}
-              </label>
-              <input
-                type="password"
-                value={inputApiKey}
-                onChange={(e) => setInputApiKey(e.target.value)}
-                placeholder={selectedProvider === 'gemini' ? 'AIzaSy...' : 'sk-...'}
-                disabled={isSavingAiKey || isDemoUser}
-                className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 font-mono disabled:opacity-50"
-              />
+              </button>
             </div>
-
-            <button
-              type="submit"
-              disabled={isSavingAiKey || !inputApiKey.trim() || isDemoUser}
-              className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white rounded-xl text-sm font-semibold transition disabled:opacity-50 shadow-md shadow-indigo-500/20 flex items-center justify-center space-x-1.5"
-            >
-              {isSavingAiKey ? (
-                <span>Validating & Connecting...</span>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4" />
-                  <span>Connect Key</span>
-                </>
-              )}
-            </button>
+          </form>
+        ) : (
+          <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl text-xs text-slate-400 flex items-center space-x-2">
+            <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0" />
+            <span>Master AI engine is active and server-managed by the workspace owner. No personal key required.</span>
           </div>
-        </form>
+        )}
       </div>
 
       {/* Invitation Code Generator Box */}
