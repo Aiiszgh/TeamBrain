@@ -2,6 +2,7 @@ import http from 'http';
 import { createApp } from './app.js';
 import { connectDatabase } from './config/database.js';
 import { initSocketIO } from './socket/socketHandler.js';
+import { initMemoryChangeStream } from './services/changeStreamService.js';
 import { startExpirySweeper } from './sweeper/expirySweeper.js';
 import { config } from './config/env.js';
 
@@ -11,7 +12,8 @@ async function bootstrap() {
   const app = createApp();
   const server = http.createServer(app);
 
-  initSocketIO(server);
+  const io = initSocketIO(server);
+  initMemoryChangeStream(io);
   startExpirySweeper();
 
   server.listen(config.port, () => {
