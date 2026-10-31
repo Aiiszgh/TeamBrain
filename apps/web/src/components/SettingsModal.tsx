@@ -512,11 +512,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         {/* Footer */}
         <div className="px-6 py-3.5 bg-slate-900/90 border-t border-slate-800 flex items-center justify-between">
-          <div className="flex items-center space-x-2 text-xs text-slate-400">
-            <Coins className="h-4 w-4 text-amber-400" />
-            <span>
-              Daily Balance: <b className="text-white">{tokens}</b> / 1000 tokens
-            </span>
+          <div className="flex items-center space-x-4 text-xs text-slate-400">
+            <div className="flex items-center space-x-1.5">
+              <Coins className="h-4 w-4 text-amber-400" />
+              <span>
+                Daily Balance: <b className="text-white">{tokens}</b> / 1000 tokens
+              </span>
+            </div>
+            <a
+              href="/teambrain_presentation.html"
+              target="_blank"
+              rel="noreferrer"
+              className="text-indigo-400 hover:text-indigo-300 font-semibold flex items-center space-x-1 underline underline-offset-2"
+            >
+              <span>UNCHARTED 2026 Presentation Deck</span>
+              <ExternalLink className="h-3 w-3" />
+            </a>
           </div>
           <button
             type="button"
