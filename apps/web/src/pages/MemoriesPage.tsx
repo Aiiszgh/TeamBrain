@@ -16,6 +16,7 @@ import {
   Trash2,
   AlertCircle,
   Copy,
+  Pencil,
 } from 'lucide-react';
 
 export const MemoriesPage: React.FC = () => {
@@ -33,6 +34,11 @@ export const MemoriesPage: React.FC = () => {
   const [createScope, setCreateScope] = useState<MemoryScope>('personal');
   const [importance, setImportance] = useState(3);
   const [expiresInDays, setExpiresInDays] = useState('');
+
+  // Edit modal
+  const [editingMemory, setEditingMemory] = useState<IMemory | null>(null);
+  const [editContent, setEditContent] = useState('');
+  const [editImportance, setEditImportance] = useState(3);
 
   // Reject modal
   const [rejectMemoryId, setRejectMemoryId] = useState<string | null>(null);
@@ -130,6 +136,38 @@ export const MemoriesPage: React.FC = () => {
       loadMemories();
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to create memory');
+    }
+  };
+
+  const handleStartEdit = (mem: IMemory) => {
+    if (isDemoUser) {
+      setErrorMessage('Action disabled in Demo Mode: Demo accounts operate with read-only permissions.');
+      return;
+    }
+    setEditingMemory(mem);
+    setEditContent(mem.content);
+    setEditImportance(mem.importance || 3);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isDemoUser) {
+      setErrorMessage('Action disabled in Demo Mode: Demo accounts operate with read-only permissions.');
+      return;
+    }
+    if (!editingMemory || !editContent.trim()) return;
+    try {
+      await apiRequest(`/memories/${editingMemory.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          content: editContent.trim(),
+          importance: editImportance,
+        }),
+      });
+      setEditingMemory(null);
+      loadMemories();
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to update memory');
     }
   };
 
@@ -431,8 +469,16 @@ export const MemoriesPage: React.FC = () => {
 
                     <div className="flex items-center space-x-2 text-xs">
                       <button
+                        onClick={() => handleStartEdit(mem)}
+                        className="inline-flex items-center space-x-1 text-slate-400 hover:text-indigo-400 p-1"
+                        title="Edit / alter memory content directly"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                        <span>Edit</span>
+                      </button>
+                      <button
                         onClick={() => handleShowAudit(mem)}
-                        className="inline-flex items-center space-x-1 text-slate-500 hover:text-indigo-600"
+                        className="inline-flex items-center space-x-1 text-slate-500 hover:text-indigo-400"
                         title="View audit trail"
                       >
                         <History className="h-3.5 w-3.5" />
@@ -440,8 +486,8 @@ export const MemoriesPage: React.FC = () => {
                       </button>
                       <button
                         onClick={() => handleDelete(mem.id)}
-                        className="text-slate-400 hover:text-red-600 p-1"
-                        title="Delete"
+                        className="text-slate-500 hover:text-red-400 p-1"
+                        title="Delete memory"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -760,6 +806,65 @@ export const MemoriesPage: React.FC = () => {
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Edit Memory Modal */}
+      {editingMemory && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl max-w-lg w-full p-6 text-white">
+            <div className="flex items-center space-x-2 mb-2 text-indigo-400">
+              <Pencil className="h-5 w-5" />
+              <h3 className="text-lg font-bold text-white">Edit & Alter Memory</h3>
+            </div>
+            <p className="text-xs text-slate-400 mb-4">
+              Modify this past memory. Vector embeddings will be automatically recalculated in MongoDB Atlas so future assistant turns reflect your changes immediately.
+            </p>
+
+            <form onSubmit={handleSaveEdit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
+                  Updated Content
+                </label>
+                <textarea
+                  required
+                  rows={4}
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase mb-1">
+                  Importance (1 - 5)
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={5}
+                  value={editImportance}
+                  onChange={(e) => setEditImportance(Number(e.target.value))}
+                  className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white focus:outline-none"
+                />
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingMemory(null)}
+                  className="px-4 py-2 border border-slate-700 rounded-xl text-sm font-medium text-slate-300 hover:bg-slate-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white rounded-xl text-sm font-semibold shadow-md shadow-indigo-500/20"
+                >
+                  Save Alterations
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

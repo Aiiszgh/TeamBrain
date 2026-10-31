@@ -361,4 +361,30 @@ router.post(
   }
 );
 
+// DELETE /conversations/:id
+router.delete(
+  '/conversations/:id',
+  requireAuth,
+  async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const conversation = await Conversation.findById(id);
+      if (!conversation) {
+        throw new AppError('CONVERSATION_NOT_FOUND', 'Conversation not found', 404);
+      }
+
+      if (conversation.userId.toString() !== req.user!._id.toString()) {
+        throw new AppError('FORBIDDEN', 'Access denied to this conversation', 403);
+      }
+
+      await Message.deleteMany({ conversationId: conversation._id });
+      await Conversation.deleteOne({ _id: conversation._id });
+
+      res.status(200).json({ success: true, message: 'Conversation deleted successfully' });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 export default router;

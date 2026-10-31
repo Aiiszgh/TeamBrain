@@ -12,6 +12,7 @@ import {
   BookmarkCheck,
   Layers,
   Brain,
+  Trash2,
 } from 'lucide-react';
 
 export const ChatPage: React.FC = () => {
@@ -78,6 +79,22 @@ export const ChatPage: React.FC = () => {
       setMessages([]);
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to create conversation');
+    }
+  };
+
+  const handleDeleteConversation = async (convId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm('Are you sure you want to delete this conversation and its history?')) return;
+    try {
+      await apiRequest(`/conversations/${convId}`, { method: 'DELETE' });
+      const updated = conversations.filter((c) => c.id !== convId);
+      setConversations(updated);
+      if (selectedConv?.id === convId) {
+        setSelectedConv(updated[0] ?? null);
+        setMessages([]);
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to delete conversation');
     }
   };
 
@@ -163,18 +180,28 @@ export const ChatPage: React.FC = () => {
             </div>
           ) : (
             conversations.map((c) => (
-              <button
+              <div
                 key={c.id}
                 onClick={() => setSelectedConv(c)}
-                className={`w-full text-left px-3 py-2.5 rounded-lg text-xs flex items-center space-x-2 transition ${
+                className={`w-full text-left px-3 py-2 rounded-lg text-xs flex items-center justify-between group cursor-pointer transition ${
                   selectedConv?.id === c.id
                     ? 'bg-indigo-950/80 border border-indigo-700/60 text-white font-semibold shadow-sm'
                     : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
                 }`}
               >
-                <MessageSquare className="h-3.5 w-3.5 shrink-0 text-indigo-400" />
-                <span className="truncate">{c.title || 'Untitled Conversation'}</span>
-              </button>
+                <div className="flex items-center space-x-2 truncate">
+                  <MessageSquare className="h-3.5 w-3.5 shrink-0 text-indigo-400" />
+                  <span className="truncate">{c.title || 'Untitled Conversation'}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => handleDeleteConversation(c.id, e)}
+                  title="Delete conversation"
+                  className="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-red-400 rounded transition"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </div>
             ))
           )}
         </div>
