@@ -135,15 +135,15 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
             </button>
 
             <button
-              onClick={() => setActiveTab('settings')}
+              onClick={() => setActiveTab('members')}
               className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                activeTab === 'settings'
+                activeTab === 'members' || activeTab === 'settings'
                   ? 'bg-indigo-950/80 text-indigo-300 border border-indigo-700/50 shadow-sm'
                   : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
               }`}
             >
-              <Settings className="h-3.5 w-3.5" />
-              <span>Members & Settings</span>
+              <Users className="h-3.5 w-3.5" />
+              <span>Members</span>
             </button>
           </nav>
 

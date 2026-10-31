@@ -19,7 +19,11 @@ import {
   Loader2,
   Info,
   ShieldCheck,
+  Coins,
+  Settings,
 } from 'lucide-react';
+import { useTeamTokens } from '../utils/tokens';
+import { SettingsModal } from '../components/SettingsModal';
 
 interface ChatPageProps {
   onNavigateTab?: (tab: string) => void;
@@ -39,6 +43,8 @@ export const ChatPage: React.FC<ChatPageProps> = ({ onNavigateTab }) => {
   const [inspectedMemory, setInspectedMemory] = useState<(IMemory & { ownerName?: string; ownerEmail?: string }) | null>(null);
   const [isLoadingInspection, setIsLoadingInspection] = useState(false);
   const [inspectionError, setInspectionError] = useState<string | null>(null);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const { tokens, deduct } = useTeamTokens(currentTeam?.id);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const handleInspectCitation = async (srcId: string) => {
@@ -174,6 +180,9 @@ export const ChatPage: React.FC<ChatPageProps> = ({ onNavigateTab }) => {
         setExtractedNotice(result.extractedMemories);
       }
 
+      // Deduct 5 tokens per member text (simulated team quota)
+      deduct(5);
+
       // Refresh conversations list to update title if it changed
       loadConversations();
     } catch (err: any) {
@@ -239,6 +248,63 @@ export const ChatPage: React.FC<ChatPageProps> = ({ onNavigateTab }) => {
               </div>
             ))
           )}
+        </div>
+
+        {/* Lower Left Settings Option */}
+        <div className="p-3 border-t border-slate-800/90 bg-slate-950/80 space-y-2">
+          {/* Token Meter Preview */}
+          <div
+            onClick={() => setIsSettingsModalOpen(true)}
+            className="bg-slate-900/90 hover:bg-slate-900 border border-slate-800 hover:border-slate-700/80 rounded-xl p-2.5 space-y-2 cursor-pointer transition shadow-sm group"
+            title="Click to view full Quota & Settings"
+          >
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="font-bold text-slate-400 uppercase tracking-wider flex items-center space-x-1.5">
+                <Coins className="h-3 w-3 text-amber-400" />
+                <span>Daily Tokens</span>
+              </span>
+              <span className="font-mono font-bold text-white text-xs">
+                <span className={tokens === 0 ? 'text-red-400' : 'text-amber-300'}>{tokens}</span>
+                <span className="text-slate-500">/1000</span>
+              </span>
+            </div>
+
+            <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden border border-slate-800">
+              <div
+                className={`h-full rounded-full transition-all duration-300 ${
+                  tokens > 300
+                    ? 'bg-gradient-to-r from-indigo-500 to-violet-500'
+                    : tokens > 50
+                    ? 'bg-amber-500'
+                    : 'bg-red-500'
+                }`}
+                style={{ width: `${Math.min(100, (tokens / 1000) * 100)}%` }}
+              />
+            </div>
+
+            <div className="flex items-center justify-between text-[10px] text-slate-500">
+              <span>-5 tokens / text</span>
+              <span className="text-indigo-400 group-hover:text-indigo-300 transition">Manage &rarr;</span>
+            </div>
+          </div>
+
+          {/* Settings Button */}
+          <button
+            type="button"
+            onClick={() => setIsSettingsModalOpen(true)}
+            className="w-full flex items-center justify-between px-3 py-2 bg-slate-900/60 hover:bg-indigo-950/60 text-slate-300 hover:text-white border border-slate-800 hover:border-indigo-600/50 rounded-xl text-xs font-semibold transition group shadow-sm"
+          >
+            <div className="flex items-center space-x-2">
+              <Settings className="h-3.5 w-3.5 text-indigo-400 group-hover:rotate-45 transition-transform" />
+              <span>Settings</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <span className="text-[10px] font-normal text-slate-400 group-hover:text-indigo-300">
+                Features & Quota
+              </span>
+              <Sparkles className="h-3 w-3 text-indigo-400 opacity-60 group-hover:opacity-100" />
+            </div>
+          </button>
         </div>
       </aside>
 
@@ -612,6 +678,12 @@ export const ChatPage: React.FC<ChatPageProps> = ({ onNavigateTab }) => {
           </div>
         </div>
       )}
+
+      {/* Global Workspace Settings Modal */}
+      <SettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+      />
     </div>
   );
 };

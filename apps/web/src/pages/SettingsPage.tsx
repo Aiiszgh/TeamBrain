@@ -217,7 +217,7 @@ export const SettingsPage: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 text-slate-200">
       <div>
-        <h1 className="text-2xl font-bold text-white">Members & Team Settings</h1>
+        <h1 className="text-2xl font-bold text-white">Team Members</h1>
         <p className="text-xs sm:text-sm text-slate-400 mt-1">
           Manage team memberships, assign administrative roles, and create invitation codes.
         </p>
@@ -227,7 +227,7 @@ export const SettingsPage: React.FC = () => {
         <div className="p-3.5 bg-amber-950/40 border border-amber-500/30 rounded-2xl flex items-center justify-between text-xs text-amber-200">
           <div className="flex items-center space-x-2">
             <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-            <span><b>Demo Mode Active:</b> Team settings modifications and invitation code generation are disabled for demo accounts.</span>
+            <span><b>Demo Mode Active:</b> Team member modifications and invitation code generation are disabled for demo accounts.</span>
           </div>
         </div>
       )}
