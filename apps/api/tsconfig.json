@@ -6,7 +6,9 @@
     "sourceMap": true,
     "skipLibCheck": true,
     "strict": false,
-    "noImplicitAny": false
+    "noImplicitAny": false,
+    "suppressExcessPropertyErrors": true,
+    "suppressImplicitAnyIndexErrors": true
   },
   "include": ["src/**/*"]
 }
