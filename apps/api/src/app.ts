@@ -52,7 +52,7 @@ export function createApp(): Express {
   app.use(express.static(webBuildPath));
 
   // Client-side routing fallback (serves index.html for frontend pages)
-  app.get('/*', (req, res, next) => {
+  app.get('/.*/', (req, res, next) => {
     // Ensure API routes don't get intercepted by the frontend fallback
     if (req.path.startsWith('/api')) {
       return next();
