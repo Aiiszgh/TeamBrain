@@ -1,6 +1,8 @@
 import express, { Express } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { config } from './config/env.js';
 import { apiRateLimiter } from './middleware/rateLimiter.js';
 import { errorHandler } from './middleware/errorHandler.js';
@@ -14,6 +16,9 @@ import conversationsRoutes from './routes/conversations.js';
 import memoriesRoutes from './routes/memories.js';
 import fusionsRoutes from './routes/fusions.js';
 import aiRoutes from './routes/ai.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export function createApp(): Express {
   const app = express();
@@ -41,6 +46,19 @@ export function createApp(): Express {
   app.use('/api', memoriesRoutes);
   app.use('/api', fusionsRoutes);
   app.use('/api', aiRoutes);
+
+  // Serve static frontend assets from apps/web/dist
+  const webBuildPath = path.resolve(__dirname, '../../web/dist');
+  app.use(express.static(webBuildPath));
+
+  // Client-side routing fallback (serves index.html for frontend pages)
+  app.get('*', (req, res, next) => {
+    // Ensure API routes don't get intercepted by the frontend fallback
+    if (req.path.startsWith('/api')) {
+      return next();
+    }
+    res.sendFile(path.join(webBuildPath, 'index.html'));
+  });
 
   // Global Error Handler
   app.use(errorHandler);
