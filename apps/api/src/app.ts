@@ -48,12 +48,24 @@ export function createApp(): Express {
   app.use('/api', aiRoutes);
 
   // Serve static frontend assets from apps/web/dist
+  // const webBuildPath = path.resolve(__dirname, '../../web/dist');
+  // app.use(express.static(webBuildPath));
+
+  // // Client-side routing fallback (serves index.html for frontend pages)
+  // app.get('/.*/', (req, res, next) => {
+  //   // Ensure API routes don't get intercepted by the frontend fallback
+  //   if (req.path.startsWith('/api')) {
+  //     return next();
+  //   }
+  //   res.sendFile(path.join(webBuildPath, 'index.html'));
+  // });
+
+  // Serve static frontend assets from apps/web/dist
   const webBuildPath = path.resolve(__dirname, '../../web/dist');
   app.use(express.static(webBuildPath));
 
-  // Client-side routing fallback (serves index.html for frontend pages)
-  app.get('/.*/', (req, res, next) => {
-    // Ensure API routes don't get intercepted by the frontend fallback
+  // Middleware fallback for client-side routing (bypasses Express path-to-regexp route matching bugs)
+  app.use((req, res, next) => {
     if (req.path.startsWith('/api')) {
       return next();
     }
